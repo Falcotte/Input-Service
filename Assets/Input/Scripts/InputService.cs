@@ -45,5 +45,18 @@ namespace AngryKoala.Input
         public void GetData(List<InputSurfaceData> results)
         {
         }
+
+        #region Internal Methods
+
+        internal void ProcessFrame()
+        {
+        }
+
+        #endregion
+
+        private void Update()
+        {
+            ProcessFrame();
+        }
     }
 }
