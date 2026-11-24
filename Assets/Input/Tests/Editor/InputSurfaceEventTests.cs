@@ -122,7 +122,7 @@ namespace AngryKoala.Input.Tests
             _surface.OnTouchBegan += ThrowFromTouch;
             _surface.OnTouchBegan += CountSecond;
 
-            LogAssert.Expect(LogType.Error, new Regex("touch", RegexOptions.IgnoreCase));
+            LogAssert.Expect(LogType.Error, new Regex(nameof(IInputSurface.OnTouchBegan)));
             LogAssert.Expect(LogType.Exception, new Regex("InvalidOperationException"));
             _surface.BeginTouch(1, Start, 0.0);
 
@@ -138,7 +138,7 @@ namespace AngryKoala.Input.Tests
             _surface.OnTap += CountSecond;
             _surface.BeginTouch(1, Start, 0.0);
 
-            LogAssert.Expect(LogType.Error, new Regex("tap", RegexOptions.IgnoreCase));
+            LogAssert.Expect(LogType.Error, new Regex(nameof(IInputSurface.OnTap)));
             LogAssert.Expect(LogType.Exception, new Regex("InvalidOperationException"));
             _surface.EndTouch(1, Start, 0.1);
 
@@ -154,7 +154,7 @@ namespace AngryKoala.Input.Tests
             _surface.OnDrag += CountSecond;
             _surface.BeginTouch(1, Start, 0.0);
 
-            LogAssert.Expect(LogType.Error, new Regex("drag", RegexOptions.IgnoreCase));
+            LogAssert.Expect(LogType.Error, new Regex(nameof(IInputSurface.OnDrag)));
             LogAssert.Expect(LogType.Exception, new Regex("InvalidOperationException"));
             _surface.UpdateTouch(1, Offset(30f, 0f), 0.1);
 
@@ -213,6 +213,7 @@ namespace AngryKoala.Input.Tests
         [Test]
         public void Drag_WithAFingerDown_DoesNotAllocate()
         {
+            _surface = CreateSurface(CreateRules());
             _surface.OnDrag += CountDrag;
             _surface.BeginTouch(1, Start, 0.0);
             _position = Start;
