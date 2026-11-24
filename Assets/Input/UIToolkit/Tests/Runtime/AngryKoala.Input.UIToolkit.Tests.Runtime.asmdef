@@ -1,0 +1,25 @@
+{
+    "name": "AngryKoala.Input.UIToolkit.Tests.Runtime",
+    "rootNamespace": "AngryKoala.Input.Tests",
+    "references": [
+        "AngryKoala.Input",
+        "AngryKoala.Input.UIToolkit",
+        "AngryKoala.Input.Testing",
+        "AngryKoala.Services",
+        "Unity.InputSystem",
+        "UnityEngine.TestRunner"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
