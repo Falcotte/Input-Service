@@ -59,6 +59,7 @@ namespace AngryKoala.Input
         private readonly List<InputSurface> _areaSurfaces = new();
 
         private bool _isTouchSupportEnabled;
+        private bool _hasCreatedConfiguredAreaSurfaces;
 
         private const int _mouseFingerId = -1;
         private const float _centimetersPerInch = 2.54f;
@@ -67,7 +68,7 @@ namespace AngryKoala.Input
         {
             base.Awake();
 
-            CreateConfiguredAreaSurfaces();
+            EnsureConfiguredAreaSurfaces();
             UpdateContext();
 
             if (ServiceLocator.TryGet<IInputService>(out var registered) && !ReferenceEquals(registered, this))
@@ -108,6 +109,8 @@ namespace AngryKoala.Input
             {
                 throw new ArgumentNullException(nameof(area));
             }
+
+            EnsureConfiguredAreaSurfaces();
 
             var surface = FindAreaSurface(area);
 
@@ -192,6 +195,8 @@ namespace AngryKoala.Input
                 throw new ArgumentNullException(nameof(results));
             }
 
+            EnsureConfiguredAreaSurfaces();
+
             results.Clear();
             results.Add(new InputSurfaceData(_screen.Name, _screen.Area, _screen.PixelRect, _screen.TouchCount,
                 _screen.PrimaryTouch, _screen.Joystick, _screen.LastGesture));
@@ -261,6 +266,11 @@ namespace AngryKoala.Input
 
         #endregion
 
+        private void Update()
+        {
+            ProcessFrame();
+        }
+
         private void PruneDestroyed()
         {
             for (var index = _blockers.Count - 1; index >= 0; index--)
@@ -280,8 +290,15 @@ namespace AngryKoala.Input
             }
         }
 
-        private void CreateConfiguredAreaSurfaces()
+        private void EnsureConfiguredAreaSurfaces()
         {
+            if (_hasCreatedConfiguredAreaSurfaces)
+            {
+                return;
+            }
+
+            _hasCreatedConfiguredAreaSurfaces = true;
+
             for (var index = 0; index < _areas.Count; index++)
             {
                 var area = _areas[index];
@@ -693,14 +710,13 @@ namespace AngryKoala.Input
             return false;
         }
 
+        #region Utility
+
         private static bool IsDestroyed(object source)
         {
             return source is Object unityObject && unityObject == null;
         }
 
-        private void Update()
-        {
-            ProcessFrame();
-        }
+        #endregion
     }
 }

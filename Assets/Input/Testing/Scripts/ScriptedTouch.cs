@@ -16,31 +16,38 @@ namespace AngryKoala.Input
     {
         private readonly Touchscreen _touchscreen;
         private readonly Dictionary<int, Vector2> _fingerPositions = new();
-        private readonly List<int> _fingerIds = new();
-        private readonly InputSettings.BackgroundBehavior _savedBackgroundBehavior;
-#if UNITY_EDITOR
-        private readonly InputSettings.EditorInputBehaviorInPlayMode _savedEditorBehavior;
-#endif
 
         private bool _isDisposed;
+
+        private static int _liveCount;
+        private static InputSettings.BackgroundBehavior _savedBackgroundBehavior;
+#if UNITY_EDITOR
+        private static InputSettings.EditorInputBehaviorInPlayMode _savedEditorBehavior;
+#endif
 
         private const string _deviceName = "Scripted Touchscreen";
         private const int _firstFingerId = 1;
         private const int _secondFingerId = 2;
         private const int _framesAfterRelease = 2;
+        private const float _halfFactor = 0.5f;
+        private const float _firstMoveProgress = 0.5f;
 
         private ScriptedTouch()
         {
-            _savedBackgroundBehavior = InputSystem.settings.backgroundBehavior;
-            InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+            if (_liveCount == 0)
+            {
+                ApplyScriptedSettings();
+            }
 
-#if UNITY_EDITOR
-            _savedEditorBehavior = InputSystem.settings.editorInputBehaviorInPlayMode;
-            InputSystem.settings.editorInputBehaviorInPlayMode =
-                InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
-#endif
+            _liveCount++;
 
             _touchscreen = InputSystem.AddDevice<Touchscreen>(_deviceName);
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            _liveCount = 0;
         }
 
         public static ScriptedTouch Create()
@@ -57,23 +64,19 @@ namespace AngryKoala.Input
 
             _isDisposed = true;
 
-            _fingerIds.Clear();
-            _fingerIds.AddRange(_fingerPositions.Keys);
-
-            foreach (var fingerId in _fingerIds)
-            {
-                Cancel(fingerId);
-            }
+            _fingerPositions.Clear();
 
             if (_touchscreen.added)
             {
                 InputSystem.RemoveDevice(_touchscreen);
             }
 
-            InputSystem.settings.backgroundBehavior = _savedBackgroundBehavior;
-#if UNITY_EDITOR
-            InputSystem.settings.editorInputBehaviorInPlayMode = _savedEditorBehavior;
-#endif
+            _liveCount--;
+
+            if (_liveCount == 0)
+            {
+                RestoreSettings();
+            }
         }
 
         public void Begin(int fingerId, Vector2 screenPosition)
@@ -176,6 +179,26 @@ namespace AngryKoala.Input
             yield return WaitFrames(_framesAfterRelease);
         }
 
+        private static void ApplyScriptedSettings()
+        {
+            _savedBackgroundBehavior = InputSystem.settings.backgroundBehavior;
+            InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+
+#if UNITY_EDITOR
+            _savedEditorBehavior = InputSystem.settings.editorInputBehaviorInPlayMode;
+            InputSystem.settings.editorInputBehaviorInPlayMode =
+                InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+#endif
+        }
+
+        private static void RestoreSettings()
+        {
+            InputSystem.settings.backgroundBehavior = _savedBackgroundBehavior;
+#if UNITY_EDITOR
+            InputSystem.settings.editorInputBehaviorInPlayMode = _savedEditorBehavior;
+#endif
+        }
+
         private void Finish(int fingerId, TouchPhase phase)
         {
             if (!_fingerPositions.TryGetValue(fingerId, out var position))
@@ -204,7 +227,7 @@ namespace AngryKoala.Input
 
         private static Vector2 GetPinchPosition(Vector2 center, float distance, float side)
         {
-            return center + new Vector2(side * distance * 0.5f, 0f);
+            return center + new Vector2(side * distance * _halfFactor, 0f);
         }
 
         /// <summary>
@@ -224,7 +247,7 @@ namespace AngryKoala.Input
 
                 if (moveCount == 0 && progress >= 1f)
                 {
-                    progress = 0.5f;
+                    progress = _firstMoveProgress;
                 }
 
                 moveCount++;

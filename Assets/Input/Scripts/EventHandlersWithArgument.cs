@@ -16,6 +16,8 @@ namespace AngryKoala.Input
         private int _raiseDepth;
         private bool _hasEmptySlots;
 
+        private static readonly Predicate<Action<TArgument>> _isEmpty = IsEmpty;
+
         public EventHandlersWithArgument(string eventName, string ownerName)
         {
             _eventName = eventName;
@@ -76,14 +78,32 @@ namespace AngryKoala.Input
                     continue;
                 }
 
+                if (HandlerTarget.IsDestroyed(handler))
+                {
+                    _handlers[index] = null;
+                    _hasEmptySlots = true;
+                    continue;
+                }
+
                 try
                 {
                     handler(argument);
                 }
                 catch (Exception exception)
                 {
-                    Debug.LogError($"A handler of {_eventName} on surface '{_ownerName}' threw.");
-                    Debug.LogException(exception);
+                    var message = $"A handler of {_eventName} on surface '{_ownerName}' threw.";
+                    var context = HandlerTarget.GetContext(handler);
+
+                    if (context != null)
+                    {
+                        Debug.LogError(message, context);
+                        Debug.LogException(exception, context);
+                    }
+                    else
+                    {
+                        Debug.LogError(message);
+                        Debug.LogException(exception);
+                    }
                 }
             }
 
@@ -91,7 +111,7 @@ namespace AngryKoala.Input
 
             if (_raiseDepth == 0 && _hasEmptySlots)
             {
-                _handlers.RemoveAll(IsEmpty);
+                _handlers.RemoveAll(_isEmpty);
                 _hasEmptySlots = false;
             }
         }

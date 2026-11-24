@@ -171,6 +171,9 @@ namespace AngryKoala.Input
         private float _pinchPreviousDistance;
 
         private const float _maximumDeadZone = 0.99f;
+        private const float _pinchCenterWeight = 0.5f;
+        private const float _directionSectorDegrees = 45f;
+        private const int _directionSectorCount = 8;
 
         private const string _tapGestureName = "Tap";
         private const string _holdGestureName = "Hold";
@@ -281,6 +284,18 @@ namespace AngryKoala.Input
 
             finger.Move(position, time);
 
+            if (IsPrimary(finger))
+            {
+                var distance = MarkStrayed(finger);
+
+                ProcessPrimaryMovement(finger, CreateTouch(finger, time, false), distance);
+
+                if (!finger.IsDown)
+                {
+                    return;
+                }
+            }
+
             var touch = CreateTouch(finger, time, false);
             var shouldRaiseTap = false;
             var shouldRaiseSwipe = false;
@@ -354,7 +369,7 @@ namespace AngryKoala.Input
 
             var scaleDelta = _pinchPreviousDistance > 0f ? distance / _pinchPreviousDistance : 1f;
             var totalScale = _pinchStartDistance > 0f ? distance / _pinchStartDistance : 1f;
-            var center = (firstPosition + secondPosition) * 0.5f;
+            var center = (firstPosition + secondPosition) * _pinchCenterWeight;
 
             _pinchPreviousDistance = distance;
             LastGesture = _pinchGestureName;
@@ -364,13 +379,7 @@ namespace AngryKoala.Input
 
         private void ProcessPrimaryUpdate(Finger finger, double time)
         {
-            var distance = (finger.Position - finger.StartPosition).magnitude;
-
-            if (distance > ToPixels(_rules.TapMaximumDistance))
-            {
-                finger.HasStrayed = true;
-            }
-
+            var distance = MarkStrayed(finger);
             var touch = CreateTouch(finger, time, false);
 
             UpdateHold(finger, touch);
@@ -380,6 +389,11 @@ namespace AngryKoala.Input
                 return;
             }
 
+            ProcessPrimaryMovement(finger, touch, distance);
+        }
+
+        private void ProcessPrimaryMovement(Finger finger, TouchData touch, float distance)
+        {
             UpdateDrag(finger, touch, distance);
 
             if (!finger.IsDown)
@@ -388,6 +402,18 @@ namespace AngryKoala.Input
             }
 
             UpdateSwipeWhenCrossed(finger, touch);
+        }
+
+        private float MarkStrayed(Finger finger)
+        {
+            var distance = (finger.Position - finger.StartPosition).magnitude;
+
+            if (distance > ToPixels(_rules.TapMaximumDistance))
+            {
+                finger.HasStrayed = true;
+            }
+
+            return distance;
         }
 
         private JoystickData GetJoystick()
@@ -451,7 +477,7 @@ namespace AngryKoala.Input
 
         private void UpdateHold(Finger finger, TouchData touch)
         {
-            if (finger.HasHeld || finger.IsHandover || finger.HasOtherFinger || finger.HasStrayed)
+            if (finger.HasHeld || finger.HasDragBegun || finger.IsHandover || finger.HasOtherFinger || finger.HasStrayed)
             {
                 return;
             }
@@ -480,6 +506,12 @@ namespace AngryKoala.Input
                 LastGesture = _dragGestureName;
 
                 _dragBeganHandlers.Raise(touch);
+
+                if (!finger.IsDown)
+                {
+                    return;
+                }
+
                 _dragHandlers.Raise(touch);
 
                 return;
@@ -513,7 +545,7 @@ namespace AngryKoala.Input
 
         private bool IsTapRecognised(Finger finger, TouchData touch)
         {
-            if (finger.IsHandover || finger.HasOtherFinger || finger.HasHeld || finger.HasStrayed)
+            if (finger.IsHandover || finger.HasOtherFinger || finger.HasHeld || finger.HasStrayed || finger.HasDragBegun)
             {
                 return false;
             }
@@ -687,7 +719,7 @@ namespace AngryKoala.Input
         private static SwipeDirection8 GetDirection8(Vector2 vector)
         {
             var angle = Mathf.Atan2(vector.y, vector.x) * Mathf.Rad2Deg;
-            var sector = (Mathf.RoundToInt(angle / 45f) + 8) % 8;
+            var sector = (Mathf.RoundToInt(angle / _directionSectorDegrees) + _directionSectorCount) % _directionSectorCount;
 
             return sector switch
             {
