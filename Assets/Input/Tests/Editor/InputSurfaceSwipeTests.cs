@@ -345,6 +345,49 @@ namespace AngryKoala.Input.Tests
             Assert.That(_recorder.Events[_recorder.Events.Count - 1], Is.EqualTo(InputSurfaceRecorder.TouchEnded));
         }
 
+        [Test]
+        public void Swipe_WhenCrossed_FingerEndsFarAwayWithoutAnUpdate_RaisesTheMovementThenTheReleaseEvents()
+        {
+            Recreate(CreateRules(swipeMaximumDuration: 0.5f));
+
+            _surface.BeginTouch(1, Start, 0.0);
+            _surface.EndTouch(1, Offset(0f, 150f), 0.1);
+
+            Assert.That(_recorder.Events,
+                Is.EqualTo(new[]
+                {
+                    InputSurfaceRecorder.TouchBegan, InputSurfaceRecorder.DragBegan, InputSurfaceRecorder.Drag,
+                    InputSurfaceRecorder.Swipe, InputSurfaceRecorder.DragEnded, InputSurfaceRecorder.TouchEnded
+                }));
+            Assert.That(_recorder.Taps, Is.Empty);
+        }
+
+        [Test]
+        public void Swipe_WhenCrossed_FingerEndsFarAwayWithoutAnUpdate_CarriesTheDirectionAndTheVector()
+        {
+            Recreate(CreateRules(swipeMaximumDuration: 0.5f));
+
+            _surface.BeginTouch(1, Start, 0.0);
+            _surface.EndTouch(1, Offset(0f, 150f), 0.1);
+
+            Assert.That(_recorder.Swipes, Has.Count.EqualTo(1));
+            Assert.That(_recorder.Swipes[0].Touch.FingerId, Is.EqualTo(1));
+            Assert.That(_recorder.Swipes[0].Vector, Is.EqualTo(new Vector2(0f, 150f)));
+            Assert.That(_recorder.Swipes[0].Direction, Is.EqualTo(SwipeDirection.Up));
+            Assert.That(_recorder.Swipes[0].Direction8, Is.EqualTo(SwipeDirection8.Up));
+        }
+
+        [Test]
+        public void Swipe_OnRelease_FingerEndsFarAwayWithoutAnUpdate_RaisesExactlyOneSwipe()
+        {
+            Recreate(CreateRules(swipeTiming: SwipeTiming.OnRelease));
+
+            _surface.BeginTouch(1, Start, 0.0);
+            _surface.EndTouch(1, Offset(150f, 0f), 0.1);
+
+            Assert.That(_recorder.Swipes, Has.Count.EqualTo(1));
+        }
+
         private void Recreate(GestureRules rules)
         {
             _surface = CreateSurface(rules);

@@ -6,6 +6,7 @@ using UnityEngine.TestTools;
 using UnityEngine.TestTools.Constraints;
 using static AngryKoala.Input.Tests.InputSurfaceTestUtility;
 using Is = UnityEngine.TestTools.Constraints.Is;
+using Object = UnityEngine.Object;
 
 namespace AngryKoala.Input.Tests
 {
@@ -211,6 +212,76 @@ namespace AngryKoala.Input.Tests
         }
 
         [Test]
+        public void Handler_OfADestroyedUnityObject_IsNotCalled_AndOthersStillRun()
+        {
+            var target = ScriptableObject.CreateInstance<DestroyableHandlerTarget>();
+
+            _surface.OnTouchBegan += CountFirst;
+            _surface.OnTouchBegan += target.HandleTouch;
+            _surface.OnTouchBegan += CountSecond;
+
+            Object.DestroyImmediate(target);
+
+            _surface.BeginTouch(1, Start, 0.0);
+
+            Assert.That(target == null, Is.True);
+            Assert.That(target.CallCount, Is.Zero);
+            Assert.That(_firstCount, Is.EqualTo(1));
+            Assert.That(_secondCount, Is.EqualTo(1));
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [Test]
+        public void Handler_OfADestroyedUnityObject_IsStillNotCalledByTheNextRaise()
+        {
+            var target = ScriptableObject.CreateInstance<DestroyableHandlerTarget>();
+
+            _surface.OnTouchBegan += target.HandleTouch;
+
+            Object.DestroyImmediate(target);
+
+            _surface.BeginTouch(1, Start, 0.0);
+            _surface.BeginTouch(2, Offset(100f, 0f), 0.1);
+
+            Assert.That(target.CallCount, Is.Zero);
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [Test]
+        public void Handler_OfALiveUnityObject_IsCalled()
+        {
+            var target = ScriptableObject.CreateInstance<DestroyableHandlerTarget>();
+
+            _surface.OnTouchBegan += target.HandleTouch;
+
+            _surface.BeginTouch(1, Start, 0.0);
+
+            Assert.That(target.CallCount, Is.EqualTo(1));
+
+            Object.DestroyImmediate(target);
+        }
+
+        [Test]
+        public void EventWithoutArgument_HandlerOfADestroyedUnityObject_IsNotCalled_AndOthersStillRun()
+        {
+            var handlers = new EventHandlers("OnTest", null);
+            var target = ScriptableObject.CreateInstance<DestroyableHandlerTarget>();
+
+            handlers.Add(CountFirstWithoutArgument);
+            handlers.Add(target.HandleEvent);
+            handlers.Add(CountSecondWithoutArgument);
+
+            Object.DestroyImmediate(target);
+
+            handlers.Raise();
+
+            Assert.That(target.CallCount, Is.Zero);
+            Assert.That(_firstCount, Is.EqualTo(1));
+            Assert.That(_secondCount, Is.EqualTo(1));
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [Test]
         public void Drag_WithAFingerDown_DoesNotAllocate()
         {
             _surface = CreateSurface(CreateRules());
@@ -250,6 +321,16 @@ namespace AngryKoala.Input.Tests
         }
 
         private void CountSecond(TouchData touch)
+        {
+            _secondCount++;
+        }
+
+        private void CountFirstWithoutArgument()
+        {
+            _firstCount++;
+        }
+
+        private void CountSecondWithoutArgument()
         {
             _secondCount++;
         }

@@ -60,8 +60,8 @@ namespace AngryKoala.Input.Tests
             SetJoystick(mode);
             Surface.SetJoystick(mode, RadiusCentimeters, NoDeadZone, newRest);
 
-            Assert.That(Surface.Joystick.Center, Is.EqualTo(newRest).Using(VectorComparer));
-            Assert.That(Surface.Joystick.HandlePosition, Is.EqualTo(newRest).Using(VectorComparer));
+            Assert.That(Surface.Joystick.Center, Is.EqualTo(newRest).Using(PositionComparer));
+            Assert.That(Surface.Joystick.HandlePosition, Is.EqualTo(newRest).Using(PositionComparer));
         }
 
         [TestCase(JoystickMode.Fixed)]
@@ -125,7 +125,7 @@ namespace AngryKoala.Input.Tests
             Press(FirstFingerId, Start);
             Move(FirstFingerId, Offset(300f, 100f));
 
-            Assert.That(Surface.Joystick.Center, Is.EqualTo(Rest).Using(VectorComparer));
+            Assert.That(Surface.Joystick.Center, Is.EqualTo(Rest).Using(PositionComparer));
         }
 
         [Test]
@@ -137,7 +137,7 @@ namespace AngryKoala.Input.Tests
             Press(FirstFingerId, Rest);
             Move(FirstFingerId, finger);
 
-            Assert.That(Surface.Joystick.HandlePosition, Is.EqualTo(finger).Using(VectorComparer));
+            Assert.That(Surface.Joystick.HandlePosition, Is.EqualTo(finger).Using(PositionComparer));
         }
 
         [Test]
@@ -150,8 +150,8 @@ namespace AngryKoala.Input.Tests
 
             var expected = Rest + new Vector2(-60f, -80f);
 
-            Assert.That(Surface.Joystick.HandlePosition, Is.EqualTo(expected).Using(VectorComparer));
-            Assert.That(Surface.Joystick.Center, Is.EqualTo(Rest).Using(VectorComparer));
+            Assert.That(Surface.Joystick.HandlePosition, Is.EqualTo(expected).Using(PositionComparer));
+            Assert.That(Surface.Joystick.Center, Is.EqualTo(Rest).Using(PositionComparer));
         }
 
         [Test]
@@ -175,7 +175,7 @@ namespace AngryKoala.Input.Tests
 
             Surface.SetJoystick(JoystickMode.Fixed, RadiusCentimeters, NoDeadZone, newRest);
 
-            Assert.That(Surface.Joystick.Center, Is.EqualTo(newRest).Using(VectorComparer));
+            Assert.That(Surface.Joystick.Center, Is.EqualTo(newRest).Using(PositionComparer));
         }
 
         [Test]
@@ -188,8 +188,8 @@ namespace AngryKoala.Input.Tests
 
             var joystick = Surface.Joystick;
 
-            Assert.That(joystick.Center, Is.EqualTo(touchDown).Using(VectorComparer));
-            Assert.That(joystick.HandlePosition, Is.EqualTo(touchDown).Using(VectorComparer));
+            Assert.That(joystick.Center, Is.EqualTo(touchDown).Using(PositionComparer));
+            Assert.That(joystick.HandlePosition, Is.EqualTo(touchDown).Using(PositionComparer));
             Assert.That(joystick.Direction, Is.EqualTo(Vector2.zero).Using(VectorComparer));
         }
 
@@ -202,7 +202,7 @@ namespace AngryKoala.Input.Tests
             Move(FirstFingerId, Offset(60f, 0f));
             Move(FirstFingerId, Offset(500f, 300f));
 
-            Assert.That(Surface.Joystick.Center, Is.EqualTo(Start).Using(VectorComparer));
+            Assert.That(Surface.Joystick.Center, Is.EqualTo(Start).Using(PositionComparer));
         }
 
         [Test]
@@ -213,7 +213,7 @@ namespace AngryKoala.Input.Tests
             Press(FirstFingerId, Start);
             Move(FirstFingerId, Offset(0f, 400f));
 
-            Assert.That(Surface.Joystick.HandlePosition, Is.EqualTo(Offset(0f, RadiusPixels)).Using(VectorComparer));
+            Assert.That(Surface.Joystick.HandlePosition, Is.EqualTo(Offset(0f, RadiusPixels)).Using(PositionComparer));
         }
 
         [Test]
@@ -224,7 +224,7 @@ namespace AngryKoala.Input.Tests
             Press(FirstFingerId, Start);
             Move(FirstFingerId, Offset(-30f, 40f));
 
-            Assert.That(Surface.Joystick.HandlePosition, Is.EqualTo(Offset(-30f, 40f)).Using(VectorComparer));
+            Assert.That(Surface.Joystick.HandlePosition, Is.EqualTo(Offset(-30f, 40f)).Using(PositionComparer));
         }
 
         [Test]
@@ -236,7 +236,7 @@ namespace AngryKoala.Input.Tests
             Lift(FirstFingerId, Start);
             Press(FirstFingerId, Offset(-200f, 150f));
 
-            Assert.That(Surface.Joystick.Center, Is.EqualTo(Offset(-200f, 150f)).Using(VectorComparer));
+            Assert.That(Surface.Joystick.Center, Is.EqualTo(Offset(-200f, 150f)).Using(PositionComparer));
         }
 
         [Test]
@@ -253,7 +253,7 @@ namespace AngryKoala.Input.Tests
 
             SetJoystick(JoystickMode.Floating);
 
-            Assert.That(Surface.Joystick.Center, Is.EqualTo(Start).Using(VectorComparer));
+            Assert.That(Surface.Joystick.Center, Is.EqualTo(Start).Using(PositionComparer));
             Assert.That(Surface.Joystick.Direction, Is.EqualTo(new Vector2(1f, 0f)).Using(VectorComparer));
         }
 
@@ -267,7 +267,7 @@ namespace AngryKoala.Input.Tests
             Press(FirstFingerId, Offset(70f, 0f));
 
             Assert.That(Surface.Joystick.IsActive, Is.True);
-            Assert.That(Surface.Joystick.Center, Is.EqualTo(Offset(70f, 0f)).Using(VectorComparer));
+            Assert.That(Surface.Joystick.Center, Is.EqualTo(Offset(70f, 0f)).Using(PositionComparer));
         }
 
         [Test]
@@ -279,7 +279,7 @@ namespace AngryKoala.Input.Tests
             Move(FirstFingerId, Offset(60f, 0f));
             Move(FirstFingerId, Offset(-50f, 50f));
 
-            Assert.That(Surface.Joystick.Center, Is.EqualTo(Start).Using(VectorComparer));
+            Assert.That(Surface.Joystick.Center, Is.EqualTo(Start).Using(PositionComparer));
         }
 
         [Test]
@@ -292,8 +292,8 @@ namespace AngryKoala.Input.Tests
 
             var joystick = Surface.Joystick;
 
-            Assert.That(joystick.Center, Is.EqualTo(Offset(150f, 0f)).Using(VectorComparer));
-            Assert.That(joystick.HandlePosition, Is.EqualTo(Offset(250f, 0f)).Using(VectorComparer));
+            Assert.That(joystick.Center, Is.EqualTo(Offset(150f, 0f)).Using(PositionComparer));
+            Assert.That(joystick.HandlePosition, Is.EqualTo(Offset(250f, 0f)).Using(PositionComparer));
             Assert.That(joystick.Direction, Is.EqualTo(new Vector2(1f, 0f)).Using(VectorComparer));
         }
 
@@ -305,7 +305,7 @@ namespace AngryKoala.Input.Tests
             Press(FirstFingerId, Start);
             Move(FirstFingerId, Offset(300f, 400f));
 
-            Assert.That(Surface.Joystick.Center, Is.EqualTo(Offset(240f, 320f)).Using(VectorComparer));
+            Assert.That(Surface.Joystick.Center, Is.EqualTo(Offset(240f, 320f)).Using(PositionComparer));
         }
 
         [Test]
@@ -319,8 +319,8 @@ namespace AngryKoala.Input.Tests
 
             var joystick = Surface.Joystick;
 
-            Assert.That(joystick.Center, Is.EqualTo(Offset(150f, 0f)).Using(VectorComparer));
-            Assert.That(joystick.HandlePosition, Is.EqualTo(Offset(200f, 0f)).Using(VectorComparer));
+            Assert.That(joystick.Center, Is.EqualTo(Offset(150f, 0f)).Using(PositionComparer));
+            Assert.That(joystick.HandlePosition, Is.EqualTo(Offset(200f, 0f)).Using(PositionComparer));
         }
 
         [Test]
@@ -336,7 +336,7 @@ namespace AngryKoala.Input.Tests
             var finger = Offset(250f, 300f);
 
             Assert.That(Vector2.Distance(joystick.Center, finger), Is.EqualTo(RadiusPixels).Within(0.01f));
-            Assert.That(joystick.HandlePosition, Is.EqualTo(finger).Using(VectorComparer));
+            Assert.That(joystick.HandlePosition, Is.EqualTo(finger).Using(PositionComparer));
         }
 
         [Test]
@@ -348,11 +348,11 @@ namespace AngryKoala.Input.Tests
             Move(FirstFingerId, Offset(250f, 0f));
             Lift(FirstFingerId, Offset(250f, 0f));
 
-            Assert.That(Surface.Joystick.Center, Is.EqualTo(Rest).Using(VectorComparer));
+            Assert.That(Surface.Joystick.Center, Is.EqualTo(Rest).Using(PositionComparer));
 
             Press(FirstFingerId, Offset(-100f, -100f));
 
-            Assert.That(Surface.Joystick.Center, Is.EqualTo(Offset(-100f, -100f)).Using(VectorComparer));
+            Assert.That(Surface.Joystick.Center, Is.EqualTo(Offset(-100f, -100f)).Using(PositionComparer));
         }
     }
 }

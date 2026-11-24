@@ -279,6 +279,44 @@ namespace AngryKoala.Input.Tests
             Assert.That(_recorder.Holds, Is.Empty);
         }
 
+        [Test]
+        public void Tap_ADragBeganInsideTheTapDistance_IsNotRaised()
+        {
+            Recreate(CreateRules(tapMaximumDistance: 0.25f, dragStartDistance: 0.1f));
+
+            _surface.BeginTouch(1, Start, 0.0);
+            _surface.UpdateTouch(1, Offset(15f, 0f), 0.05);
+            _surface.EndTouch(1, Offset(15f, 0f), 0.1);
+
+            Assert.That(_recorder.DragsBegan, Has.Count.EqualTo(1));
+            Assert.That(_recorder.DragsEnded, Has.Count.EqualTo(1));
+            Assert.That(_recorder.Taps, Is.Empty);
+        }
+
+        [Test]
+        public void Tap_TravelOfExactlyTheDragStartDistance_IsNotRaised()
+        {
+            _surface.BeginTouch(1, Start, 0.0);
+            _surface.UpdateTouch(1, Offset(25f, 0f), 0.05);
+            _surface.EndTouch(1, Offset(25f, 0f), 0.1);
+
+            Assert.That(_recorder.DragsBegan, Has.Count.EqualTo(1));
+            Assert.That(_recorder.Taps, Is.Empty);
+        }
+
+        [Test]
+        public void Hold_ADragBeganInsideTheTapDistance_IsNotRaised()
+        {
+            Recreate(CreateRules(tapMaximumDistance: 0.25f, dragStartDistance: 0.1f));
+
+            _surface.BeginTouch(1, Start, 0.0);
+            _surface.UpdateTouch(1, Offset(15f, 0f), 0.05);
+            _surface.UpdateTouch(1, Offset(15f, 0f), 0.6);
+
+            Assert.That(_recorder.DragsBegan, Has.Count.EqualTo(1));
+            Assert.That(_recorder.Holds, Is.Empty);
+        }
+
         private void Recreate(GestureRules rules)
         {
             _surface = CreateSurface(rules);

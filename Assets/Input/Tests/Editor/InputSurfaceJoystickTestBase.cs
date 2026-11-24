@@ -17,6 +17,8 @@ namespace AngryKoala.Input.Tests
 
         protected static readonly Vector2EqualityComparer VectorComparer = new(0.01f);
 
+        protected static readonly Vector2AbsoluteEqualityComparer PositionComparer = new(0.05f);
+
         internal InputSurface Surface { get; private set; }
 
         private double _time;
@@ -66,8 +68,8 @@ namespace AngryKoala.Input.Tests
         protected static void AssertAtRest(JoystickData joystick)
         {
             Assert.That(joystick.IsActive, Is.False);
-            Assert.That(joystick.Center, Is.EqualTo(Rest).Using(VectorComparer));
-            Assert.That(joystick.HandlePosition, Is.EqualTo(Rest).Using(VectorComparer));
+            Assert.That(joystick.Center, Is.EqualTo(Rest).Using(PositionComparer));
+            Assert.That(joystick.HandlePosition, Is.EqualTo(Rest).Using(PositionComparer));
             Assert.That(joystick.Radius, Is.EqualTo(RadiusPixels).Within(0.01f));
             Assert.That(joystick.Direction, Is.EqualTo(Vector2.zero).Using(VectorComparer));
         }

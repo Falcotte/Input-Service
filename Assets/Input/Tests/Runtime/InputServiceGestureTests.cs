@@ -56,6 +56,24 @@ namespace AngryKoala.Input.Tests
         }
 
         [UnityTest]
+        public IEnumerator Swipe_MoveAndEndQueuedInTheSameFrame_RaisesASwipe()
+        {
+            var recorder = Record(ScreenSurface);
+            var halfVector = Vector2.right * (DragLength * 0.5f);
+
+            Touch.Begin(FirstFingerId, ScreenCenter - halfVector);
+            yield return null;
+
+            Touch.Move(FirstFingerId, ScreenCenter + halfVector);
+            Touch.End(FirstFingerId);
+            yield return WaitFrames(2);
+
+            Assert.That(recorder.Swipes.Count, Is.EqualTo(1));
+            Assert.That(recorder.Swipes[0].Direction, Is.EqualTo(SwipeDirection.Right));
+            Assert.That(recorder.Taps.Count, Is.EqualTo(0));
+        }
+
+        [UnityTest]
         public IEnumerator Drag_ToTheLeft_RaisesSwipeLeft()
         {
             var recorder = Record(ScreenSurface);

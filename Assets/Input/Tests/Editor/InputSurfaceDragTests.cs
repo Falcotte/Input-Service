@@ -109,6 +109,90 @@ namespace AngryKoala.Input.Tests
         }
 
         [Test]
+        public void Drag_FingerEndsFurtherOnThanTheLastUpdate_RaisesTheLastStepBeforeDragEnded()
+        {
+            _surface.BeginTouch(1, Start, 0.0);
+            _surface.UpdateTouch(1, Offset(30f, 0f), 0.1);
+            _surface.UpdateTouch(1, Offset(60f, 0f), 0.2);
+            _recorder.Clear();
+
+            _surface.EndTouch(1, Offset(90f, 0f), 0.3);
+
+            Assert.That(_recorder.Events,
+                Is.EqualTo(new[]
+                {
+                    InputSurfaceRecorder.Drag, InputSurfaceRecorder.DragEnded, InputSurfaceRecorder.TouchEnded
+                }));
+            Assert.That(_recorder.Drags[0].Delta, Is.EqualTo(new Vector2(30f, 0f)));
+        }
+
+        [Test]
+        public void Drag_AllDeltasTogether_EqualTheTotalDeltaOfTheTouchThatEnds()
+        {
+            _surface.BeginTouch(1, Start, 0.0);
+            _surface.UpdateTouch(1, Offset(30f, 0f), 0.1);
+            _surface.UpdateTouch(1, Offset(60f, 10f), 0.2);
+            _surface.EndTouch(1, Offset(90f, 25f), 0.3);
+
+            var sum = Vector2.zero;
+
+            foreach (var touch in _recorder.Drags)
+            {
+                sum += touch.Delta;
+            }
+
+            Assert.That(_recorder.DragsEnded, Has.Count.EqualTo(1));
+            Assert.That(_recorder.DragsEnded[0].TotalDelta, Is.EqualTo(new Vector2(90f, 25f)));
+            Assert.That(sum, Is.EqualTo(_recorder.DragsEnded[0].TotalDelta));
+        }
+
+        [Test]
+        public void Drag_FingerEndsWhereTheLastUpdateLeftIt_RaisesNoExtraDrag()
+        {
+            _surface.BeginTouch(1, Start, 0.0);
+            _surface.UpdateTouch(1, Offset(30f, 0f), 0.1);
+            _surface.UpdateTouch(1, Offset(60f, 0f), 0.2);
+
+            _surface.EndTouch(1, Offset(60f, 0f), 0.3);
+
+            Assert.That(_recorder.Drags, Has.Count.EqualTo(2));
+        }
+
+        [Test]
+        public void Drag_BeganHandlerCancelsTheTouch_RaisesNoDragAfterTouchEnded()
+        {
+            _surface.OnDragBegan += CancelTouchOne;
+            _surface.BeginTouch(1, Start, 0.0);
+
+            _surface.UpdateTouch(1, Offset(30f, 0f), 0.1);
+
+            Assert.That(_recorder.Events,
+                Is.EqualTo(new[]
+                {
+                    InputSurfaceRecorder.TouchBegan, InputSurfaceRecorder.DragBegan, InputSurfaceRecorder.DragEnded,
+                    InputSurfaceRecorder.TouchEnded
+                }));
+            Assert.That(_recorder.TouchesEnded[0].WasCanceled, Is.True);
+        }
+
+        [Test]
+        public void Drag_BeganHandlerCancelsAllTouches_RaisesNoDragAfterTouchEnded()
+        {
+            _surface.OnDragBegan += CancelAllTouches;
+            _surface.BeginTouch(1, Start, 0.0);
+
+            _surface.UpdateTouch(1, Offset(30f, 0f), 0.1);
+
+            Assert.That(_recorder.Events,
+                Is.EqualTo(new[]
+                {
+                    InputSurfaceRecorder.TouchBegan, InputSurfaceRecorder.DragBegan, InputSurfaceRecorder.DragEnded,
+                    InputSurfaceRecorder.TouchEnded
+                }));
+            Assert.That(_recorder.TouchesEnded[0].WasCanceled, Is.True);
+        }
+
+        [Test]
         public void Drag_InALaterFrameWithoutMovement_IsNotRaised()
         {
             _surface.BeginTouch(1, Start, 0.0);
@@ -251,6 +335,16 @@ namespace AngryKoala.Input.Tests
             Assert.That(_recorder.DragsBegan, Has.Count.EqualTo(1));
             Assert.That(_recorder.DragsBegan[0].FingerId, Is.EqualTo(2));
             Assert.That(_recorder.DragsBegan[0].StartPosition, Is.EqualTo(Offset(300f, 0f)));
+        }
+
+        private void CancelTouchOne(TouchData touch)
+        {
+            _surface.CancelTouch(1, 0.15);
+        }
+
+        private void CancelAllTouches(TouchData touch)
+        {
+            _surface.CancelAllTouches(0.15);
         }
     }
 }
