@@ -1,0 +1,17 @@
+{
+    "name": "AngryKoala.Input",
+    "rootNamespace": "AngryKoala.Input",
+    "references": [
+        "AngryKoala.Services",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
