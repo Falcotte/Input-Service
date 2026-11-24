@@ -82,7 +82,8 @@ namespace AngryKoala.Input
                 }
                 catch (Exception exception)
                 {
-                    Debug.LogError($"A handler of {_eventName} on surface '{_ownerName}' threw.");
+                    var location = string.IsNullOrEmpty(_ownerName) ? string.Empty : $" on surface '{_ownerName}'";
+                    Debug.LogError($"A handler of {_eventName}{location} threw.");
                     Debug.LogException(exception);
                 }
             }

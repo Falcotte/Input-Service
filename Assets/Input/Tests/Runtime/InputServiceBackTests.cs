@@ -14,6 +14,13 @@ namespace AngryKoala.Input.Tests
         private int _backCount;
         private int _otherBackCount;
 
+        [SetUp]
+        public void ResetCounts()
+        {
+            _backCount = 0;
+            _otherBackCount = 0;
+        }
+
         [UnityTest]
         public IEnumerator OnBackPressed_EscapePressed_IsRaisedOnce()
         {
