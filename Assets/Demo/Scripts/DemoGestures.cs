@@ -5,11 +5,13 @@ namespace AngryKoala.Input.Demo
 {
     public sealed class DemoGestures : MonoBehaviour
     {
-        [SerializeField] private Transform _player;
+        [SerializeField]
+        private Transform _player;
 
         private IInputService _inputService;
         private IInputSurface _screen;
         private Renderer _playerRenderer;
+        private Material _playerMaterial;
         private Color _startColor;
         private Vector3 _startScale;
 
@@ -21,7 +23,8 @@ namespace AngryKoala.Input.Demo
             _inputService = ServiceLocator.Get<IInputService>();
 
             _playerRenderer = _player.GetComponent<Renderer>();
-            _startColor = _playerRenderer.material.color;
+            _playerMaterial = _playerRenderer.material;
+            _startColor = _playerMaterial.color;
             _startScale = _player.localScale;
 
             _screen = _inputService.Screen;
@@ -32,7 +35,7 @@ namespace AngryKoala.Input.Demo
 
         private void HandleSwipe(SwipeData swipe)
         {
-            _playerRenderer.material.color = swipe.Direction switch
+            _playerMaterial.color = swipe.Direction switch
             {
                 SwipeDirection.Up => Color.yellow,
                 SwipeDirection.Down => Color.cyan,
@@ -50,12 +53,17 @@ namespace AngryKoala.Input.Demo
 
         private void HandleBackPressed()
         {
-            _playerRenderer.material.color = _startColor;
+            _playerMaterial.color = _startColor;
             _player.localScale = _startScale;
         }
 
         private void OnDestroy()
         {
+            if (_playerMaterial != null)
+            {
+                Destroy(_playerMaterial);
+            }
+
             if (_screen == null)
             {
                 return;

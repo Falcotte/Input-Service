@@ -5,13 +5,17 @@ namespace AngryKoala.Input.Demo
 {
     public sealed class DemoPlayer : MonoBehaviour
     {
-        [SerializeField] private InputArea _area;
+        [SerializeField]
+        private InputArea _area;
 
-        [SerializeField] private float _speed = 4f;
+        [SerializeField]
+        private float _speed = 4f;
 
-        [SerializeField] private float _hopHeight = 1f;
+        [SerializeField]
+        private float _hopHeight = 1f;
 
-        [SerializeField] private float _hopDuration = 0.4f;
+        [SerializeField]
+        private float _hopDuration = 0.4f;
 
         private IInputSurface _surface;
         private float _groundHeight;

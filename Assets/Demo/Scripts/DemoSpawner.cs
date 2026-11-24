@@ -6,7 +6,8 @@ namespace AngryKoala.Input.Demo
 {
     public sealed class DemoSpawner : MonoBehaviour
     {
-        [SerializeField] private float _cubeSize = 0.4f;
+        [SerializeField]
+        private float _cubeSize = 0.4f;
 
         private readonly List<GameObject> _cubes = new();
 
@@ -49,7 +50,7 @@ namespace AngryKoala.Input.Demo
             var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
             // The primitive comes with a collider that nothing here needs.
-            Destroy(cube.GetComponent("Collider"));
+            Destroy(cube.GetComponent<Collider>());
 
             cube.transform.position = point + Vector3.up * (_cubeSize * 0.5f);
             cube.transform.localScale = Vector3.one * _cubeSize;

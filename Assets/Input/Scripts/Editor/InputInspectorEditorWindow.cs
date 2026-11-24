@@ -45,6 +45,7 @@ namespace AngryKoala.Input
         private const float _fitHeaderWeight = 0f;
         private const float _detailIndent = 16f;
         private const float _defaultToolbarHeight = 18f;
+        private const float _refreshButtonWidth = 70f;
 
         private const float _wideMinimumWidth = 760f;
         private const float _wideAspectRatio = 1.6f;
@@ -208,7 +209,7 @@ namespace AngryKoala.Input
             {
                 EditorGUI.BeginDisabledGroup(!EditorApplication.isPlaying || !HasLiveService());
 
-                if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.Width(70)))
+                if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.Width(_refreshButtonWidth)))
                 {
                     Repaint();
                 }
@@ -383,12 +384,12 @@ namespace AngryKoala.Input
             var table = new Rect(inner.x, inner.y, inner.width, (_surfaces.Count + 1) * _rowHeight);
             DrawTable(table, _surfaceHeaders, _surfaceWeights, _surfaceWidths);
 
-            for (int i = 0; i < _surfaces.Count; i++)
+            for (int index = 0; index < _surfaces.Count; index++)
             {
-                InputSurfaceData data = _surfaces[i];
+                InputSurfaceData data = _surfaces[index];
                 TouchData touch = data.PrimaryTouch;
                 JoystickData joystick = data.Joystick;
-                int row = i + 1;
+                int row = index + 1;
 
                 DrawCell(table, _surfaceWidths, row, 0, data.Name);
 
@@ -424,10 +425,10 @@ namespace AngryKoala.Input
             var table = new Rect(inner.x, inner.y, inner.width, (_fingers.Count + 1) * _rowHeight);
             DrawTable(table, _fingerHeaders, _fingerWeights, _fingerWidths);
 
-            for (int i = 0; i < _fingers.Count; i++)
+            for (int index = 0; index < _fingers.Count; index++)
             {
-                InputFingerData finger = _fingers[i];
-                int row = i + 1;
+                InputFingerData finger = _fingers[index];
+                int row = index + 1;
 
                 DrawCell(table, _fingerWidths, row, 0, finger.IsMouse ? _mouseLabel : finger.Id.ToString());
                 DrawCell(table, _fingerWidths, row, 1, finger.OwnerName ?? _ignoredLabel);
@@ -467,9 +468,9 @@ namespace AngryKoala.Input
             EditorGUI.DrawRect(local, EditorGUIUtility.isProSkin ? _mapDarkBackgroundColor : _mapLightBackgroundColor);
             DrawOutline(local, _mapBorderColor);
 
-            for (int i = 0; i < _surfaces.Count; i++)
+            for (int index = 0; index < _surfaces.Count; index++)
             {
-                InputSurfaceData data = _surfaces[i];
+                InputSurfaceData data = _surfaces[index];
 
                 if (data.Area == null)
                 {
@@ -486,9 +487,9 @@ namespace AngryKoala.Input
 
             Color handlesColor = Handles.color;
 
-            for (int i = 0; i < _surfaces.Count; i++)
+            for (int index = 0; index < _surfaces.Count; index++)
             {
-                InputSurfaceData data = _surfaces[i];
+                InputSurfaceData data = _surfaces[index];
 
                 if (data.TouchCount > 0)
                 {
@@ -641,10 +642,10 @@ namespace AngryKoala.Input
 
             float x = table.x;
 
-            for (int i = 0; i < widths.Length; i++)
+            for (int index = 0; index < widths.Length; index++)
             {
-                EditorGUI.DrawRect(new Rect(x, table.y, widths[i], table.height), GetColumnColor(i));
-                x += widths[i];
+                EditorGUI.DrawRect(new Rect(x, table.y, widths[index], table.height), GetColumnColor(index));
+                x += widths[index];
             }
 
             EditorGUI.DrawRect(new Rect(table.x, table.y, table.width, _rowHeight), _headerColor);
@@ -653,9 +654,9 @@ namespace AngryKoala.Input
                 _mapBorderColor);
             DrawOutline(table, _mapBorderColor);
 
-            for (int i = 0; i < headers.Length; i++)
+            for (int index = 0; index < headers.Length; index++)
             {
-                DrawCell(table, widths, 0, i, headers[i]);
+                DrawCell(table, widths, 0, index, headers[index]);
             }
         }
 
@@ -664,27 +665,27 @@ namespace AngryKoala.Input
             float totalWeight = 0f;
             float fittedWidth = 0f;
 
-            for (int i = 0; i < weights.Length; i++)
+            for (int index = 0; index < weights.Length; index++)
             {
-                if (weights[i] > _fitHeaderWeight)
+                if (weights[index] > _fitHeaderWeight)
                 {
-                    totalWeight += weights[i];
+                    totalWeight += weights[index];
                     continue;
                 }
 
-                _measuredContent.text = headers[i];
-                widths[i] = Mathf.Min(_headerStyle.CalcSize(_measuredContent).x + _cellPaddingX * 2f,
+                _measuredContent.text = headers[index];
+                widths[index] = Mathf.Min(_headerStyle.CalcSize(_measuredContent).x + _cellPaddingX * 2f,
                     tableWidth - fittedWidth);
-                fittedWidth += widths[i];
+                fittedWidth += widths[index];
             }
 
             float unit = totalWeight > 0f ? (tableWidth - fittedWidth) / totalWeight : 0f;
 
-            for (int i = 0; i < weights.Length; i++)
+            for (int index = 0; index < weights.Length; index++)
             {
-                if (weights[i] > _fitHeaderWeight)
+                if (weights[index] > _fitHeaderWeight)
                 {
-                    widths[i] = weights[i] * unit;
+                    widths[index] = weights[index] * unit;
                 }
             }
         }
@@ -693,9 +694,9 @@ namespace AngryKoala.Input
         {
             float offset = 0f;
 
-            for (int i = 0; i < column; i++)
+            for (int index = 0; index < column; index++)
             {
-                offset += widths[i];
+                offset += widths[index];
             }
 
             var cell = new Rect(table.x + offset + _cellPaddingX, table.y + row * _rowHeight,

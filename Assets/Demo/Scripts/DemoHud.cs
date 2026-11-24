@@ -8,7 +8,7 @@ namespace AngryKoala.Input.Demo
     public sealed class DemoHud : MonoBehaviour
     {
         // Remembers the last gesture a surface reported and says when it changes.
-        private sealed class GestureLog
+        private sealed class GestureLog : IDisposable
         {
             private readonly IInputSurface _surface;
             private readonly Action _onChanged;
@@ -49,11 +49,14 @@ namespace AngryKoala.Input.Demo
             }
         }
 
-        [SerializeField] private UIDocument _document;
+        [SerializeField]
+        private UIDocument _document;
 
-        [SerializeField] private InputArea _moveArea;
+        [SerializeField]
+        private InputArea _moveArea;
 
-        [SerializeField] private DemoSpawner _spawner;
+        [SerializeField]
+        private DemoSpawner _spawner;
 
         private IInputService _inputService;
         private GestureLog _screenLog;
@@ -61,24 +64,41 @@ namespace AngryKoala.Input.Demo
         private VisualElement _container;
         private Label _statusLabel;
         private Toggle _blockToggle;
+        private bool _isBlocking;
 
         private const float _margin = 24f;
         private const float _fontSize = 36f;
 
         private void OnEnable()
         {
-            BuildUi();
+            TryBuildUi();
         }
 
         private void OnDisable()
         {
+            if (_isBlocking)
+            {
+                _isBlocking = false;
+                _inputService?.Unblock(this);
+            }
+
+            if (_container == null)
+            {
+                return;
+            }
+
             _container.UnregisterCallback<GeometryChangedEvent>(HandleGeometryChanged);
             _container.RemoveFromHierarchy();
+            _container = null;
+            _statusLabel = null;
+            _blockToggle = null;
         }
 
         private void Start()
         {
             _inputService = ServiceLocator.Get<IInputService>();
+
+            TryBuildUi();
 
             _screenLog = new GestureLog(_inputService.Screen, Refresh);
             _moveLog = new GestureLog(_inputService.GetArea(_moveArea), Refresh);
@@ -86,9 +106,25 @@ namespace AngryKoala.Input.Demo
             Refresh();
         }
 
-        private void BuildUi()
+        private void TryBuildUi()
         {
+            if (_container != null || _document == null)
+            {
+                return;
+            }
+
             var root = _document.rootVisualElement;
+
+            if (root == null)
+            {
+                return;
+            }
+
+            BuildUi(root);
+        }
+
+        private void BuildUi(VisualElement root)
+        {
             root.pickingMode = PickingMode.Ignore;
 
             // Every container that covers more than its controls ignores pointers, or it would swallow the
@@ -123,6 +159,7 @@ namespace AngryKoala.Input.Demo
             clearButton.style.marginRight = _margin;
 
             _blockToggle = new Toggle("Block input");
+            _blockToggle.SetValueWithoutNotify(_isBlocking);
             _blockToggle.style.fontSize = _fontSize;
             _blockToggle.style.backgroundColor = new Color(0f, 0f, 0f, 0.5f);
             _blockToggle.RegisterValueChangedCallback(HandleBlockChanged);
@@ -133,10 +170,7 @@ namespace AngryKoala.Input.Demo
             _container.Add(row);
             root.Add(_container);
 
-            if (_inputService != null)
-            {
-                Refresh();
-            }
+            Refresh();
         }
 
         private void HandleGeometryChanged(GeometryChangedEvent changedEvent)
@@ -165,7 +199,9 @@ namespace AngryKoala.Input.Demo
 
         private void HandleBlockChanged(ChangeEvent<bool> changeEvent)
         {
-            if (changeEvent.newValue)
+            _isBlocking = changeEvent.newValue;
+
+            if (_isBlocking)
             {
                 _inputService.Block(this);
             }
@@ -179,6 +215,11 @@ namespace AngryKoala.Input.Demo
 
         private void Refresh()
         {
+            if (_inputService == null || _statusLabel == null || _screenLog == null)
+            {
+                return;
+            }
+
             var blocked = _inputService.IsBlocked ? "yes" : "no";
 
             _statusLabel.text = $"Screen: {_screenLog.Last}\nMove area: {_moveLog.Last}\nBlocked: {blocked}";
