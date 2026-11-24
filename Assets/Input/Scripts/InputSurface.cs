@@ -46,14 +46,14 @@ namespace AngryKoala.Input
             {
                 Delta = position - Position;
                 Position = position;
-                LastTime = time;
+                LastTime = Math.Max(LastTime, time);
             }
 
             public void BecomePrimaryByHandover(double time)
             {
                 StartPosition = Position;
-                StartTime = time;
-                LastTime = time;
+                LastTime = Math.Max(LastTime, time);
+                StartTime = LastTime;
                 Delta = Vector2.zero;
                 IsHandover = true;
             }
@@ -170,7 +170,6 @@ namespace AngryKoala.Input
         private float _pinchStartDistance;
         private float _pinchPreviousDistance;
 
-        private const float _maximumDeadZone = 0.99f;
         private const float _pinchCenterWeight = 0.5f;
         private const float _directionSectorDegrees = 45f;
         private const int _directionSectorCount = 8;
@@ -217,7 +216,7 @@ namespace AngryKoala.Input
         {
             _joystickMode = mode;
             _joystickRadiusCentimeters = Mathf.Max(0f, radiusCentimeters);
-            _joystickDeadZone = Mathf.Clamp(deadZone, 0f, _maximumDeadZone);
+            _joystickDeadZone = Mathf.Clamp(deadZone, 0f, InputArea.MaximumJoystickDeadZone);
             _joystickRestPosition = restPosition;
         }
 
@@ -601,7 +600,7 @@ namespace AngryKoala.Input
         private void CancelFinger(Finger finger, double time)
         {
             finger.Delta = Vector2.zero;
-            finger.LastTime = time;
+            finger.LastTime = Math.Max(finger.LastTime, time);
 
             var touch = CreateTouch(finger, time, true);
             var shouldRaiseDragEnded = IsPrimary(finger) && finger.HasDragBegun;
@@ -688,9 +687,10 @@ namespace AngryKoala.Input
 
         private TouchData CreateTouch(Finger finger, double time, bool wasCanceled)
         {
+            var duration = (float)Math.Max(0.0, Math.Max(time, finger.LastTime) - finger.StartTime);
+
             return new TouchData(finger.FingerId, finger.Position, finger.StartPosition,
-                Normalize(finger.Position), finger.Delta, (float)(time - finger.StartTime), wasCanceled,
-                _pixelsPerCentimeter);
+                Normalize(finger.Position), finger.Delta, duration, wasCanceled, _pixelsPerCentimeter);
         }
 
         private Vector2 Normalize(Vector2 position)

@@ -8,7 +8,8 @@ namespace AngryKoala.Input.Tests
     {
         private const float _minimumHoldDuration = 0.05f;
         private const float _minimumSwipeDistance = 0.01f;
-        private const float _minimumFallbackDpi = 1f;
+        private const float _minimumFallbackDpi = 30f;
+        private const float _defaultFallbackDpi = 160f;
 
         private GestureSettings _settings;
 
@@ -135,6 +136,61 @@ namespace AngryKoala.Input.Tests
 
         #endregion
 
+        #region ResolveDpi
+
+        [Test]
+        public void ResolveDpi_ScreenReportsADpi_IsTheScreenDpi()
+        {
+            _settings = GestureSettingsTestUtility.CreateSettings(fallbackDpi: 96f);
+
+            Assert.That(GestureSettings.ResolveDpi(326f, _settings), Is.EqualTo(326f));
+        }
+
+        [Test]
+        public void ResolveDpi_ScreenReportsNoDpi_IsTheFallbackOfTheSettings()
+        {
+            _settings = GestureSettingsTestUtility.CreateSettings(fallbackDpi: 96f);
+
+            Assert.That(GestureSettings.ResolveDpi(0f, _settings), Is.EqualTo(96f));
+        }
+
+        [Test]
+        public void ResolveDpi_ScreenReportsNoDpiAndThereAreNoSettings_IsTheDefaultFallback()
+        {
+            Assert.That(GestureSettings.ResolveDpi(0f, null), Is.EqualTo(GestureSettings.DefaultFallbackDpi));
+            Assert.That(GestureSettings.DefaultFallbackDpi, Is.EqualTo(160f));
+        }
+
+        [TestCase(0f)]
+        [TestCase(-160f)]
+        [TestCase(float.NaN)]
+        public void ResolveDpi_ZeroNegativeOrNaNFallback_IsTheDefault(float value)
+        {
+            _settings = GestureSettingsTestUtility.CreateSettings(fallbackDpi: value);
+
+            Assert.That(GestureSettings.ResolveDpi(0f, _settings), Is.EqualTo(_defaultFallbackDpi));
+        }
+
+        [TestCase(0.5f)]
+        [TestCase(29f)]
+        public void ResolveDpi_PositiveFallbackBelowTheMinimum_IsTheMinimum(float value)
+        {
+            _settings = GestureSettingsTestUtility.CreateSettings(fallbackDpi: value);
+
+            Assert.That(GestureSettings.ResolveDpi(0f, _settings), Is.EqualTo(_minimumFallbackDpi));
+        }
+
+        [TestCase(-1f)]
+        [TestCase(float.NaN)]
+        public void ResolveDpi_NegativeOrNaNScreenDpi_IsTheFallbackOfTheSettings(float screenDpi)
+        {
+            _settings = GestureSettingsTestUtility.CreateSettings(fallbackDpi: 96f);
+
+            Assert.That(GestureSettings.ResolveDpi(screenDpi, _settings), Is.EqualTo(96f));
+        }
+
+        #endregion
+
         #region OnValidate
 
         [Test]
@@ -221,8 +277,19 @@ namespace AngryKoala.Input.Tests
 
         [TestCase(0f)]
         [TestCase(-160f)]
+        [TestCase(float.NaN)]
+        public void OnValidate_ZeroNegativeOrNaNFallbackDpi_IsTheDefault(float value)
+        {
+            _settings = GestureSettingsTestUtility.CreateSettings(fallbackDpi: value);
+
+            ValidationTestUtility.Validate(_settings);
+
+            Assert.That(_settings.FallbackDpi, Is.EqualTo(_defaultFallbackDpi));
+        }
+
         [TestCase(0.5f)]
-        public void OnValidate_FallbackDpiBelowTheMinimum_ClampsTheField(float value)
+        [TestCase(29f)]
+        public void OnValidate_PositiveFallbackDpiBelowTheMinimum_IsTheMinimum(float value)
         {
             _settings = GestureSettingsTestUtility.CreateSettings(fallbackDpi: value);
 

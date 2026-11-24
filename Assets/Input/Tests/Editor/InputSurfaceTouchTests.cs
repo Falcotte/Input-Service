@@ -25,6 +25,33 @@ namespace AngryKoala.Input.Tests
         }
 
         [Test]
+        public void EndTouch_OfTheSecondFingerWithAnEarlierTimeThanTheHandover_HasADurationOfZeroOrMore()
+        {
+            _surface.BeginTouch(1, Start, 9.0);
+            _surface.BeginTouch(2, Offset(300f, 0f), 9.1);
+            _surface.EndTouch(1, Start, 10.005);
+            _surface.EndTouch(2, Offset(300f, 0f), 10.0);
+
+            Assert.That(_recorder.TouchesEnded, Has.Count.EqualTo(2));
+            Assert.That(_recorder.TouchesEnded[1].FingerId, Is.EqualTo(2));
+            Assert.That(_recorder.TouchesEnded[1].Duration, Is.GreaterThanOrEqualTo(0f));
+        }
+
+        [Test]
+        public void EndTouch_WithATimeEarlierThanTheLastUpdate_HasADurationNotLessThanAtTheLastUpdate()
+        {
+            _surface.BeginTouch(1, Start, 0.0);
+            _surface.UpdateTouch(1, Start, 0.2);
+
+            var durationAtTheLastUpdate = _surface.PrimaryTouch.Duration;
+
+            _surface.EndTouch(1, Start, 0.15);
+
+            Assert.That(_recorder.TouchesEnded, Has.Count.EqualTo(1));
+            Assert.That(_recorder.TouchesEnded[0].Duration, Is.GreaterThanOrEqualTo(durationAtTheLastUpdate));
+        }
+
+        [Test]
         public void PixelRect_ReturnsTheRectangleGivenToSetContext()
         {
             var pixelRect = new Rect(100f, 200f, 640f, 480f);

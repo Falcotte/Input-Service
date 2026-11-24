@@ -1,3 +1,4 @@
+using System;
 using AngryKoala.Services;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -81,11 +82,21 @@ namespace AngryKoala.Input
 
             AttachElements();
 
-            ServiceLocator.WhenRegistered<IInputService>(HandleServiceRegistered);
+            ServiceLocator.OnServiceRegistered += HandleServiceRegistered;
+            ServiceLocator.OnServiceDeregistered += HandleServiceDeregistered;
+
+            if (ServiceLocator.TryGet<IInputService>(out var service))
+            {
+                _service = service;
+                ResolveSurface();
+            }
         }
 
         private void OnDisable()
         {
+            ServiceLocator.OnServiceRegistered -= HandleServiceRegistered;
+            ServiceLocator.OnServiceDeregistered -= HandleServiceDeregistered;
+
             _background.RemoveFromHierarchy();
             _handle.RemoveFromHierarchy();
 
@@ -95,15 +106,26 @@ namespace AngryKoala.Input
             _surface = null;
         }
 
-        private void HandleServiceRegistered(IInputService service)
+        private void HandleServiceRegistered(Type type, IService service)
         {
-            if (!isActiveAndEnabled)
+            if (type != typeof(IInputService) || service is not IInputService inputService)
             {
                 return;
             }
 
-            _service = service;
+            _service = inputService;
             ResolveSurface();
+        }
+
+        private void HandleServiceDeregistered(Type type, IService service)
+        {
+            if (type != typeof(IInputService) || !ReferenceEquals(_service, service))
+            {
+                return;
+            }
+
+            _service = null;
+            _surface = null;
         }
 
         private void ResolveSurface()

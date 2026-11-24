@@ -1,3 +1,4 @@
+using System;
 using AngryKoala.Services;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -21,10 +22,37 @@ namespace AngryKoala.Input
 
         private void OnEnable()
         {
-            ServiceLocator.WhenRegistered<IInputService>(HandleServiceRegistered);
+            ServiceLocator.OnServiceRegistered += HandleServiceRegistered;
+            ServiceLocator.OnServiceDeregistered += HandleServiceDeregistered;
+
+            if (ServiceLocator.TryGet<IInputService>(out var service))
+            {
+                Attach(service);
+            }
         }
 
         private void OnDisable()
+        {
+            ServiceLocator.OnServiceRegistered -= HandleServiceRegistered;
+            ServiceLocator.OnServiceDeregistered -= HandleServiceDeregistered;
+
+            Detach();
+        }
+
+        private void Attach(IInputService service)
+        {
+            if (ReferenceEquals(_registeredService, service))
+            {
+                return;
+            }
+
+            Detach();
+
+            _registeredService = service;
+            service.AddPointerFilter(this);
+        }
+
+        private void Detach()
         {
             var service = _registeredService;
             _registeredService = null;
@@ -37,15 +65,24 @@ namespace AngryKoala.Input
             service.RemovePointerFilter(this);
         }
 
-        private void HandleServiceRegistered(IInputService service)
+        private void HandleServiceRegistered(Type type, IService service)
         {
-            if (!isActiveAndEnabled || ReferenceEquals(_registeredService, service))
+            if (type != typeof(IInputService) || service is not IInputService inputService)
             {
                 return;
             }
 
-            _registeredService = service;
-            service.AddPointerFilter(this);
+            Attach(inputService);
+        }
+
+        private void HandleServiceDeregistered(Type type, IService service)
+        {
+            if (type != typeof(IInputService) || !ReferenceEquals(_registeredService, service))
+            {
+                return;
+            }
+
+            Detach();
         }
 
         public bool TakesPointer(Vector2 screenPosition)

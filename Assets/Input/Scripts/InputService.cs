@@ -4,12 +4,14 @@ using AngryKoala.Services;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
+using UnityEngine.InputSystem.LowLevel;
 using Object = UnityEngine.Object;
 using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
 using TouchPhase = UnityEngine.InputSystem.TouchPhase;
 
 namespace AngryKoala.Input
 {
+    [DefaultExecutionOrder(InputService.ExecutionOrder)]
     public sealed class InputService : BaseService<IInputService>, IInputService
     {
         private struct TrackedFinger
@@ -60,6 +62,8 @@ namespace AngryKoala.Input
 
         private bool _isTouchSupportEnabled;
         private bool _hasCreatedConfiguredAreaSurfaces;
+
+        internal const int ExecutionOrder = -100;
 
         private const int _mouseFingerId = -1;
         private const float _centimetersPerInch = 2.54f;
@@ -214,7 +218,7 @@ namespace AngryKoala.Input
 
         internal void ProcessFrame()
         {
-            var time = Time.unscaledTimeAsDouble;
+            var time = InputState.currentTime;
 
             PruneDestroyed();
             UpdateContext();
@@ -383,19 +387,7 @@ namespace AngryKoala.Input
 
         private static float GetDpi(GestureSettings gestureSettings)
         {
-            var dpi = UnityEngine.Screen.dpi;
-
-            if (dpi > 0f)
-            {
-                return dpi;
-            }
-
-            if (gestureSettings != null && gestureSettings.FallbackDpi > 0f)
-            {
-                return gestureSettings.FallbackDpi;
-            }
-
-            return GestureSettings.DefaultFallbackDpi;
+            return GestureSettings.ResolveDpi(UnityEngine.Screen.dpi, gestureSettings);
         }
 
         private void CompleteFrame(double time)
@@ -467,7 +459,7 @@ namespace AngryKoala.Input
 
                     if (owner != null)
                     {
-                        owner.EndTouch(fingerId, touch.screenPosition, time);
+                        owner.EndTouch(fingerId, touch.screenPosition, touch.time);
                     }
 
                     break;
@@ -476,7 +468,7 @@ namespace AngryKoala.Input
 
                     if (owner != null)
                     {
-                        owner.CancelTouch(fingerId, time);
+                        owner.CancelTouch(fingerId, touch.time);
                     }
 
                     break;
@@ -501,12 +493,20 @@ namespace AngryKoala.Input
                     return;
                 case TouchPhase.Began:
                     CancelMouseFinger(time);
-                    BeginFinger(touch.touchId, touch.screenPosition, time);
+                    BeginFinger(touch.touchId, touch.screenPosition, GetStartTime(touch, time));
                     return;
                 default:
                     _fingers.Add(new TrackedFinger { Id = touch.touchId, Owner = null, IsSeen = true });
                     return;
             }
+        }
+
+        private static double GetStartTime(Touch touch, double time)
+        {
+            // A device that never set its start time reports zero or less, so the time of the event stands in.
+            var startTime = touch.startTime > 0.0 ? touch.startTime : touch.time;
+
+            return Math.Min(startTime, time);
         }
 
         private void BeginFinger(int fingerId, Vector2 position, double time)
@@ -657,7 +657,7 @@ namespace AngryKoala.Input
 
         private void CancelAllTouches()
         {
-            var time = Time.unscaledTimeAsDouble;
+            var time = InputState.currentTime;
 
             _screen.CancelAllTouches(time);
 

@@ -34,7 +34,7 @@ namespace AngryKoala.Input
         public float JoystickRadius => _joystickRadius;
 
         [SerializeField]
-        [Range(0f, 0.9f)]
+        [Range(0f, MaximumJoystickDeadZone)]
         [Tooltip("The part of the radius around the centre that gives no direction.")]
         private float _joystickDeadZone = 0.1f;
         public float JoystickDeadZone => _joystickDeadZone;
@@ -48,6 +48,16 @@ namespace AngryKoala.Input
         [Tooltip("Optional. Empty means the input service's gesture settings.")]
         private GestureSettings _gestureSettings;
         public GestureSettings GestureSettings => _gestureSettings;
+
+        internal const float MaximumJoystickDeadZone = 0.9f;
+
+        private void OnValidate()
+        {
+            _minimum = new Vector2(Mathf.Clamp01(_minimum.x), Mathf.Clamp01(_minimum.y));
+            _maximum = new Vector2(Mathf.Clamp(_maximum.x, _minimum.x, 1f), Mathf.Clamp(_maximum.y, _minimum.y, 1f));
+            _joystickRadius = Mathf.Max(0f, _joystickRadius);
+            _joystickDeadZone = Mathf.Clamp(_joystickDeadZone, 0f, MaximumJoystickDeadZone);
+        }
 
         internal Rect GetPixelRect(Rect screenRect, Rect safeArea)
         {

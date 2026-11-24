@@ -46,11 +46,64 @@ namespace AngryKoala.Input
         public float FallbackDpi => _fallbackDpi;
 
         internal const float DefaultFallbackDpi = 160f;
+        internal const float MinimumHoldDuration = 0.05f;
+        internal const float MinimumSwipeDistance = 0.01f;
+        internal const float MinimumFallbackDpi = 30f;
+
+        private void OnValidate()
+        {
+            _tapMaximumDuration = ClampTapMaximumDuration(_tapMaximumDuration);
+            _tapMaximumDistance = ClampTapMaximumDistance(_tapMaximumDistance);
+            _holdDuration = ClampHoldDuration(_holdDuration);
+            _dragStartDistance = ClampDragStartDistance(_dragStartDistance);
+            _swipeDistance = ClampSwipeDistance(_swipeDistance);
+            _swipeMaximumDuration = ClampSwipeMaximumDuration(_swipeMaximumDuration);
+            _fallbackDpi = ClampFallbackDpi(_fallbackDpi);
+        }
 
         internal GestureRules ToRules()
         {
-            return new GestureRules(_tapMaximumDuration, _tapMaximumDistance, _holdDuration, _dragStartDistance,
-                _swipeDistance, _swipeMaximumDuration, _swipeTiming);
+            return new GestureRules(ClampTapMaximumDuration(_tapMaximumDuration),
+                ClampTapMaximumDistance(_tapMaximumDistance), ClampHoldDuration(_holdDuration),
+                ClampDragStartDistance(_dragStartDistance), ClampSwipeDistance(_swipeDistance),
+                ClampSwipeMaximumDuration(_swipeMaximumDuration), _swipeTiming);
+        }
+
+        internal static float ResolveDpi(float screenDpi, GestureSettings gestureSettings)
+        {
+            if (screenDpi > 0f)
+            {
+                return screenDpi;
+            }
+
+            if (gestureSettings != null)
+            {
+                return ClampFallbackDpi(gestureSettings.FallbackDpi);
+            }
+
+            return DefaultFallbackDpi;
+        }
+
+        private static float ClampTapMaximumDuration(float value) => Mathf.Max(0f, value);
+
+        private static float ClampTapMaximumDistance(float value) => Mathf.Max(0f, value);
+
+        private static float ClampHoldDuration(float value) => Mathf.Max(MinimumHoldDuration, value);
+
+        private static float ClampDragStartDistance(float value) => Mathf.Max(0f, value);
+
+        private static float ClampSwipeDistance(float value) => Mathf.Max(MinimumSwipeDistance, value);
+
+        private static float ClampSwipeMaximumDuration(float value) => Mathf.Max(0f, value);
+
+        private static float ClampFallbackDpi(float value)
+        {
+            if (float.IsNaN(value) || value <= 0f)
+            {
+                return DefaultFallbackDpi;
+            }
+
+            return Mathf.Max(MinimumFallbackDpi, value);
         }
     }
 }

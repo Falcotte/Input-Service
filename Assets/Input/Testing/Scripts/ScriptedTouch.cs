@@ -23,9 +23,15 @@ namespace AngryKoala.Input
         private static InputSettings.BackgroundBehavior _savedBackgroundBehavior;
 #if UNITY_EDITOR
         private static InputSettings.EditorInputBehaviorInPlayMode _savedEditorBehavior;
+        private static Type _gameViewType;
+        private static bool _hasLookedUpGameViewType;
+        private static bool _hasWarnedAboutGameView;
 #endif
 
         private const string _deviceName = "Scripted Touchscreen";
+#if UNITY_EDITOR
+        private const string _gameViewTypeName = "UnityEditor.GameView";
+#endif
         private const int _firstFingerId = 1;
         private const int _secondFingerId = 2;
         private const int _framesAfterRelease = 2;
@@ -48,6 +54,9 @@ namespace AngryKoala.Input
         private static void ResetStatics()
         {
             _liveCount = 0;
+#if UNITY_EDITOR
+            _hasWarnedAboutGameView = false;
+#endif
         }
 
         public static ScriptedTouch Create()
@@ -188,8 +197,38 @@ namespace AngryKoala.Input
             _savedEditorBehavior = InputSystem.settings.editorInputBehaviorInPlayMode;
             InputSystem.settings.editorInputBehaviorInPlayMode =
                 InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+
+            FocusGameView();
 #endif
         }
+
+#if UNITY_EDITOR
+        // UI Toolkit ignores pointer input while the Game view is not the focused editor window.
+        private static void FocusGameView()
+        {
+            if (!_hasLookedUpGameViewType)
+            {
+                _gameViewType = typeof(UnityEditor.EditorWindow).Assembly.GetType(_gameViewTypeName);
+                _hasLookedUpGameViewType = true;
+            }
+
+            if (_gameViewType != null && Resources.FindObjectsOfTypeAll(_gameViewType).Length > 0)
+            {
+                UnityEditor.EditorWindow.FocusWindowIfItsOpen(_gameViewType);
+                return;
+            }
+
+            if (_hasWarnedAboutGameView || Application.isBatchMode)
+            {
+                return;
+            }
+
+            _hasWarnedAboutGameView = true;
+
+            Debug.LogWarning("ScriptedTouch could not focus the Game view: UI Toolkit will ignore scripted clicks " +
+                "without a focused Game view.");
+        }
+#endif
 
         private static void RestoreSettings()
         {
