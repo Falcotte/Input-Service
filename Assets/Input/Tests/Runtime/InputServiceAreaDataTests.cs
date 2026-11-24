@@ -10,7 +10,7 @@ namespace AngryKoala.Input.Tests
     public sealed class InputServiceAreaDataTests : InputServiceAreaTestBase
     {
         private static readonly RectEqualityComparer _rectComparer = new(0.5f);
-        private static readonly Vector2EqualityComparer _positionComparer = new(1f);
+        private static readonly Vector2AbsoluteEqualityComparer _positionComparer = new(1f);
 
         [UnityTest]
         public IEnumerator GetData_WithAreasInUse_HasTheScreenRowFirstThenOneRowPerAreaInOrder()

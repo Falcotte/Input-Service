@@ -8,7 +8,7 @@ namespace AngryKoala.Input.Tests
 {
     public sealed class InputServiceAreaJoystickTests : InputServiceAreaTestBase
     {
-        private static readonly Vector2EqualityComparer _positionComparer = new(1f);
+        private static readonly Vector2AbsoluteEqualityComparer _positionComparer = new(1f);
 
         [UnityTest]
         public IEnumerator FloatingJoystick_DraggedRightBeyondTheRadius_PointsRight()
