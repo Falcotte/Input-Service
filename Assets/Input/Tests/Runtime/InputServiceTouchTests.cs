@@ -9,6 +9,7 @@ namespace AngryKoala.Input.Tests
     public sealed class InputServiceTouchTests : InputServiceTestBase
     {
         private static readonly Vector2EqualityComparer _positionComparer = Vector2EqualityComparer.Instance;
+        private static readonly Vector2AbsoluteEqualityComparer _absolutePositionComparer = new(0.5f);
 
         [UnityTest]
         public IEnumerator Begin_OnTheScreen_RaisesTouchBeganOnTheScreenSurface()
@@ -114,6 +115,46 @@ namespace AngryKoala.Input.Tests
             yield return WaitFrames(3);
 
             Assert.That(recorder.Taps.Count, Is.EqualTo(0));
+        }
+
+        [UnityTest]
+        public IEnumerator Begin_WithTheIdOfAFingerThatLiftedInTheUpdateBefore_IsANewTouch()
+        {
+            var recorder = Record(ScreenSurface);
+            var secondPosition = ScreenPoint(0.7f, 0.4f);
+
+            Touch.Begin(FirstFingerId, ScreenCenter);
+            yield return null;
+
+            Touch.End(FirstFingerId);
+            yield return null;
+
+            Touch.Begin(FirstFingerId, secondPosition);
+            yield return null;
+
+            Assert.That(recorder.TouchBegan.Count, Is.EqualTo(2));
+            Assert.That(recorder.TouchEnded.Count, Is.EqualTo(1));
+            Assert.That(ScreenSurface.TouchCount, Is.EqualTo(1));
+            Assert.That(ScreenSurface.PrimaryTouch.Position, Is.EqualTo(secondPosition).Using(_absolutePositionComparer));
+            Assert.That(ScreenSurface.PrimaryTouch.StartPosition,
+                Is.EqualTo(secondPosition).Using(_absolutePositionComparer));
+        }
+
+        [UnityTest]
+        public IEnumerator Tap_WithTheIdOfAFingerThatLiftedInTheUpdateBefore_IsRaisedAgain()
+        {
+            var recorder = Record(ScreenSurface);
+
+            Touch.Begin(FirstFingerId, ScreenCenter);
+            yield return null;
+
+            Touch.End(FirstFingerId);
+            yield return null;
+
+            yield return Touch.Tap(ScreenPoint(0.7f, 0.4f));
+
+            Assert.That(recorder.Taps.Count, Is.EqualTo(2));
+            Assert.That(ScreenSurface.TouchCount, Is.EqualTo(0));
         }
 
         [UnityTest]

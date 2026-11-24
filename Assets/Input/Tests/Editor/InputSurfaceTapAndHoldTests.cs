@@ -317,6 +317,62 @@ namespace AngryKoala.Input.Tests
             Assert.That(_recorder.Holds, Is.Empty);
         }
 
+        [Test]
+        public void Tap_ASecondTouchWithTheSameFingerId_IsRaisedAgain()
+        {
+            _surface.BeginTouch(1, Start, 0.0);
+            _surface.EndTouch(1, Start, 0.1);
+            _surface.BeginTouch(1, Offset(200f, 0f), 0.12);
+            _surface.EndTouch(1, Offset(200f, 0f), 0.2);
+
+            Assert.That(_recorder.Taps, Has.Count.EqualTo(2));
+            Assert.That(_recorder.Taps[1].Position, Is.EqualTo(Offset(200f, 0f)));
+            Assert.That(_recorder.Taps[1].StartPosition, Is.EqualTo(Offset(200f, 0f)));
+            Assert.That(_recorder.Taps[1].Duration, Is.EqualTo(0.08f).Within(0.001f));
+            Assert.That(_surface.TouchCount, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Tap_AfterATouchWithTheSameFingerIdWasHeld_ForgetsTheHold()
+        {
+            _surface.BeginTouch(1, Start, 0.0);
+            _surface.UpdateTouch(1, Start, 0.6);
+            _surface.EndTouch(1, Start, 0.7);
+            _surface.BeginTouch(1, Start, 0.72);
+            _surface.EndTouch(1, Start, 0.8);
+
+            Assert.That(_recorder.Holds, Has.Count.EqualTo(1));
+            Assert.That(_recorder.Taps, Has.Count.EqualTo(1));
+            Assert.That(_recorder.TouchesBegan, Has.Count.EqualTo(2));
+            Assert.That(_recorder.TouchesEnded, Has.Count.EqualTo(2));
+        }
+
+        [Test]
+        public void Tap_AfterATouchWithTheSameFingerIdWasDragged_ForgetsTheDrag()
+        {
+            _surface.BeginTouch(1, Start, 0.0);
+            _surface.UpdateTouch(1, Offset(100f, 0f), 0.1);
+            _surface.EndTouch(1, Offset(100f, 0f), 0.2);
+            _surface.BeginTouch(1, Start, 0.22);
+            _surface.EndTouch(1, Start, 0.3);
+
+            Assert.That(_recorder.DragsBegan, Has.Count.EqualTo(1));
+            Assert.That(_recorder.DragsEnded, Has.Count.EqualTo(1));
+            Assert.That(_recorder.Taps, Has.Count.EqualTo(1));
+        }
+
+        [Test]
+        public void Hold_ASecondTouchWithTheSameFingerId_IsRaisedAgain()
+        {
+            _surface.BeginTouch(1, Start, 0.0);
+            _surface.UpdateTouch(1, Start, 0.6);
+            _surface.EndTouch(1, Start, 0.7);
+            _surface.BeginTouch(1, Start, 0.72);
+            _surface.UpdateTouch(1, Start, 1.3);
+
+            Assert.That(_recorder.Holds, Has.Count.EqualTo(2));
+        }
+
         private void Recreate(GestureRules rules)
         {
             _surface = CreateSurface(rules);

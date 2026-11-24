@@ -67,6 +67,27 @@ namespace AngryKoala.Input.Tests
         [TestCase(JoystickMode.Fixed)]
         [TestCase(JoystickMode.Floating)]
         [TestCase(JoystickMode.Following)]
+        public void Direction_DeadZoneAboveTheAreaMaximum_IsClampedToTheAreaMaximum(JoystickMode mode)
+        {
+            const float deadZoneAboveTheMaximum = 0.95f;
+            const float maximumDeadZone = 0.9f;
+            const float magnitude = 0.97f;
+
+            var center = GetStartCenter(mode);
+            SetJoystick(mode, deadZoneAboveTheMaximum);
+
+            Press(FirstFingerId, center);
+            Move(FirstFingerId, center + new Vector2(magnitude * RadiusPixels, 0f));
+
+            var expectedLength = (magnitude - maximumDeadZone) / (1f - maximumDeadZone);
+
+            Assert.That(Surface.Joystick.Direction.x, Is.EqualTo(expectedLength).Within(0.001f));
+            Assert.That(Surface.Joystick.Direction.y, Is.EqualTo(0f).Within(0.001f));
+        }
+
+        [TestCase(JoystickMode.Fixed)]
+        [TestCase(JoystickMode.Floating)]
+        [TestCase(JoystickMode.Following)]
         public void Direction_RightAfterThePress_IsZero(JoystickMode mode)
         {
             SetJoystick(mode, 0.1f);

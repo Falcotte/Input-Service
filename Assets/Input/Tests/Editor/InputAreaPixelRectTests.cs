@@ -139,6 +139,48 @@ namespace AngryKoala.Input.Tests
             Assert.That(screenResult.width, Is.EqualTo(500f).Within(0.001f));
         }
 
+        [Test]
+        public void GetPixelRect_SwappedMinimumAndMaximum_IsNotNegativeAndInsideTheScreen()
+        {
+            _area = CreateArea(InputAreaSpace.Screen, new Vector2(0.9f, 0.8f), new Vector2(0.2f, 0.1f));
+
+            AssertNotNegativeAndInside(_area.GetPixelRect(_screenRect, _safeArea), _screenRect);
+        }
+
+        [Test]
+        public void GetPixelRect_FractionsFarOutsideTheRange_IsNotNegativeAndInsideTheScreen()
+        {
+            _area = CreateArea(InputAreaSpace.Screen, new Vector2(-4f, 3f), new Vector2(7f, -2f));
+
+            AssertNotNegativeAndInside(_area.GetPixelRect(_screenRect, _safeArea), _screenRect);
+        }
+
+        [Test]
+        public void GetPixelRect_MinimumBeyondTheTopRight_IsNotNegativeAndInsideTheSafeArea()
+        {
+            _area = CreateArea(InputAreaSpace.SafeArea, new Vector2(1.5f, 2f), new Vector2(3f, 4f));
+
+            AssertNotNegativeAndInside(_area.GetPixelRect(_screenRect, _safeArea), _safeArea);
+        }
+
+        [Test]
+        public void GetPixelRect_SwappedInSafeAreaSpace_IsNotNegativeAndInsideTheSafeArea()
+        {
+            _area = CreateArea(InputAreaSpace.SafeArea, new Vector2(0.75f, 1f), new Vector2(0.25f, 0.5f));
+
+            AssertNotNegativeAndInside(_area.GetPixelRect(_screenRect, _safeArea), _safeArea);
+        }
+
+        private static void AssertNotNegativeAndInside(Rect pixelRect, Rect container)
+        {
+            Assert.That(pixelRect.width, Is.GreaterThanOrEqualTo(0f));
+            Assert.That(pixelRect.height, Is.GreaterThanOrEqualTo(0f));
+            Assert.That(pixelRect.xMin, Is.GreaterThanOrEqualTo(container.xMin - 0.001f));
+            Assert.That(pixelRect.yMin, Is.GreaterThanOrEqualTo(container.yMin - 0.001f));
+            Assert.That(pixelRect.xMax, Is.LessThanOrEqualTo(container.xMax + 0.001f));
+            Assert.That(pixelRect.yMax, Is.LessThanOrEqualTo(container.yMax + 0.001f));
+        }
+
         private static InputArea CreateArea(InputAreaSpace space, Vector2 minimum, Vector2 maximum)
         {
             return InputAreaTestUtility.CreateArea("Test Area", space, minimum, maximum);

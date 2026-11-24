@@ -334,6 +334,51 @@ namespace AngryKoala.Input.Tests
             Assert.That(_clickCount, Is.EqualTo(1));
         }
 
+        [UnityTest]
+        public IEnumerator Registration_ServiceReplacedByANewOne_TakesThePointerOnTheNewService()
+        {
+            yield return CreateSceneWithService();
+            AddFilter();
+            yield return null;
+
+            Object.Destroy(Service.gameObject);
+            yield return null;
+
+            CreateService();
+            yield return WaitFrames(2);
+
+            var screenCounter = Count(Service.Screen);
+
+            yield return Touch.Tap(ScreenPositionOf(_button));
+            yield return WaitFrames(2);
+
+            Assert.That(_clickCount, Is.EqualTo(1));
+            Assert.That(screenCounter.TouchBeganCount, Is.EqualTo(0));
+            Assert.That(screenCounter.TapCount, Is.EqualTo(0));
+        }
+
+        [UnityTest]
+        public IEnumerator Registration_ServiceReplacedByANewOne_StillLeavesThePointerBesideTheButtonToTheScreenSurface()
+        {
+            yield return CreateSceneWithService();
+            AddFilter();
+            yield return null;
+
+            Object.Destroy(Service.gameObject);
+            yield return null;
+
+            CreateService();
+            yield return WaitFrames(2);
+
+            var screenCounter = Count(Service.Screen);
+
+            yield return Touch.Tap(GetPositionBesideButton());
+            yield return WaitFrames(2);
+
+            Assert.That(screenCounter.TouchBeganCount, Is.EqualTo(1));
+            Assert.That(screenCounter.TapCount, Is.EqualTo(1));
+        }
+
         #endregion
 
         #region Utility

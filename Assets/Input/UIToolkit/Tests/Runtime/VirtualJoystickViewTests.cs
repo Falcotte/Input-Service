@@ -453,6 +453,36 @@ namespace AngryKoala.Input.Tests
             AssertPlacedLikeJoystick(view, Service.GetArea(area).Joystick);
         }
 
+        [UnityTest]
+        public IEnumerator ServiceReplacedByANewOne_ShowsTheJoystickForAFingerOnTheNewService()
+        {
+            yield return CreateSceneWithService();
+
+            var area = CreateArea(JoystickMode.Floating);
+            var view = AddView(area);
+            yield return WaitFrames(2);
+
+            UnityEngine.Object.Destroy(Service.gameObject);
+            yield return null;
+
+            CreateService();
+            yield return WaitFrames(2);
+
+            var touchPosition = ScreenPoint(0.25f, 0.4f);
+
+            Touch.Begin(_fingerId, touchPosition);
+            yield return WaitFrames(4);
+
+            var joystick = Service.GetArea(area).Joystick;
+
+            Assert.That(joystick.IsActive, Is.True);
+            Assert.That(view.Background.style.display.value, Is.Not.EqualTo(DisplayStyle.None));
+            Assert.That(view.Handle.style.display.value, Is.Not.EqualTo(DisplayStyle.None));
+            Assert.That(view.Background.resolvedStyle.opacity, Is.GreaterThan(0f));
+            Assert.That(view.Background.worldBound.center, Is.EqualTo(ScreenToPanel(touchPosition)).Using(_panelPositionComparer));
+            AssertPlacedLikeJoystick(view, joystick);
+        }
+
         #endregion
 
         #region Pointer filter
