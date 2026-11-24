@@ -170,7 +170,7 @@ public sealed class GestureSettings : ScriptableObject
     public float SwipeDistance { get; }          // 1 cm
     public float SwipeMaximumDuration { get; }   // 0, no limit
     public SwipeTiming SwipeTiming { get; }      // WhenCrossed
-    public float FallbackDpi { get; }            // 160, used when the screen reports no DPI
+    public float FallbackDpi { get; }            // 160, used when the screen reports no DPI. Zero or less means 160.
 }
 
 // Adds a filter for Unity UI Toolkit. Put it beside a UIDocument.
@@ -266,13 +266,14 @@ public sealed class Player : MonoBehaviour
 
 - Positions are in pixels, from the bottom left of the screen. `NormalizedPosition` is from 0 to 1 inside the surface.
 - Distances in the gesture settings are centimetres. They are converted with the screen's DPI. A screen that reports no DPI uses `FallbackDpi`.
-- Durations are in seconds, in unscaled time.
+- Durations are in seconds of real time. They come from the Input System's own timestamp of each touch, not from the frame that reads it, so a frame hitch does not turn a quick tap into a long press.
+- The settings are kept sane when they are read and when an asset is edited. No duration or distance is negative. The hold duration is at least 0.05 s and the swipe distance at least 0.01 cm. A fallback DPI of zero or less means 160, and a positive one below 30 is raised to 30. An area's minimum and maximum stay within 0 to 1, and the maximum is never below the minimum.
 
 **Joystick**
 
 - A joystick belongs to an area. The screen has none. A joystick over the whole screen is an area that covers the screen.
 - **None** gives no joystick. **Fixed** keeps the joystick at `FixedJoystickPosition` inside the area. **Floating** places it where the first finger went down, until the finger lifts. **Following** does the same, and moves the joystick along when the finger goes further than the radius.
-- The joystick's `Direction` is zero inside the dead zone. Outside it, the length rises from 0 to 1 at the edge of the radius.
+- The joystick's `Direction` is zero inside the dead zone. Outside it, the length rises from 0 to 1 at the edge of the radius. The dead zone is at most 0.9 of the radius.
 - `Joystick.HandlePosition` never goes further from the centre than the radius.
 
 **Blocking and cancellation**
@@ -303,8 +304,9 @@ public sealed class Player : MonoBehaviour
 - A handler that throws does not stop the other handlers. When the handler is a method of a Unity object, the log entry points at that object.
 - A handler that is a method of a destroyed Unity object is not called. It is dropped from the event without a log entry. Unsubscribing in `OnDisable` or `OnDestroy` is still the rule.
 
-**Input System update mode**
+**Update order and the Input System's update mode**
 
+- The service's `Update` runs before scripts with the default execution order (its order is -100). A script that reads `Joystick` or `PrimaryTouch` in its own `Update` sees this frame's values.
 - The service reads the touches once per `Update`. Keep the Input System's update mode at its default, Process Events In Dynamic Update. With events processed in Fixed Update, a release can be missed in a frame with two fixed steps, and the touch is then reported as cancelled.
 
 ## What it needs
@@ -317,7 +319,7 @@ public sealed class Player : MonoBehaviour
 
 ## Pointer filters and UI Toolkit
 
-A UI Toolkit screen takes the touches on its buttons through `UIDocumentPointerFilter`. Put it on the same GameObject as the `UIDocument`. It registers with the service when the service is there, and answers from what the panel has under the finger.
+A UI Toolkit screen takes the touches on its buttons through `UIDocumentPointerFilter`. Put it on the same GameObject as the `UIDocument`. It registers with the service when the service is there, and answers from what the panel has under the finger. If the service is destroyed and another one registers, for example after a scene reload, the filter and the joystick view move to the new one.
 
 An empty `UIDocument` root is not picked, so it takes no touches. A full-screen layout element is picked, so it takes every touch that lands on it, including the ones meant for the game. Give such an element `picking-mode: ignore` in USS, or set `pickingMode` to `PickingMode.Ignore` in code. Otherwise every touch counts as UI.
 
@@ -411,9 +413,9 @@ The routines are `Tap`, `Hold`, `Drag` and `Pinch`, and they yield frames while 
 
 While a `ScriptedTouch` exists, two Input System settings are changed: `backgroundBehavior` to ignore focus, and in the Editor `editorInputBehaviorInPlayMode` to send all device input to the Game view. The first live `ScriptedTouch` changes them, and disposing the last one restores them. Dispose also removes the device. Use it in a `using` block, or call `Dispose` in the test's teardown.
 
-Those settings make the Input System and the service see a scripted touch while the Editor is in the background. UI Toolkit has its own check: it ignores pointer input while the Game view is not the focused Editor window. A scripted touch clicks a UI Toolkit button only when the Game view has the focus. A test that expects a click fails when another Editor window, such as the Scene view, is focused during the run.
+Those settings make the Input System and the service see a scripted touch while the Editor is in the background. UI Toolkit has its own check: it ignores pointer input while the application does not count as focused, which in the Editor depends on the Game view having the focus. So the first live `ScriptedTouch` also gives the focus to the Game view in the Editor. It takes the focus from the window you were in, and it does not give it back. With no Game view open it logs one warning, and scripted clicks on UI Toolkit buttons may then be ignored.
 
-A test assembly that uses `ScriptedTouch` must reference `AngryKoala.Input.Testing`. That assembly is compiled only where the `UNITY_INCLUDE_TESTS` define is set.
+A test assembly that uses `ScriptedTouch` must reference `AngryKoala.Input.Testing`. That assembly is compiled only where the `UNITY_INCLUDE_TESTS` define is set. In a project that installs the package, that means listing `com.angrykoala.input` under `testables` in `Packages/manifest.json`, which also adds the package's own tests to the Test Runner.
 
 A real mouse click in the Game view, or a real Escape key, during a test run can disturb the service tests, because the service reads the current mouse and keyboard.
 
