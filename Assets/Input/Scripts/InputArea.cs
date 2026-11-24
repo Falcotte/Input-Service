@@ -48,5 +48,10 @@ namespace AngryKoala.Input
         [Tooltip("Optional. Empty means the input service's gesture settings.")]
         private GestureSettings _gestureSettings;
         public GestureSettings GestureSettings => _gestureSettings;
+
+        internal Rect GetPixelRect(Rect screenRect, Rect safeArea)
+        {
+            return default;
+        }
     }
 }

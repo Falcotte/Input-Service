@@ -199,6 +199,10 @@ namespace AngryKoala.Input
             PixelRect = pixelRect;
         }
 
+        public void SetJoystick(JoystickMode mode, float radiusCentimeters, float deadZone, Vector2 restPosition)
+        {
+        }
+
         public void BeginTouch(int fingerId, Vector2 position, double time)
         {
             if (FindFinger(fingerId) != null)
