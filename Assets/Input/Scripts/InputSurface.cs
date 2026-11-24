@@ -69,5 +69,12 @@ namespace AngryKoala.Input
         public void CancelAllTouches(double time)
         {
         }
+
+        /// <summary>
+        /// Called once per frame after every finger has been fed in. Gestures that need two fingers are decided here.
+        /// </summary>
+        public void CompleteFrame(double time)
+        {
+        }
     }
 }
