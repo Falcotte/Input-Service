@@ -72,7 +72,7 @@ namespace AngryKoala.Input.Tests
 
             joystick = surface.Joystick;
 
-            Assert.That(() => joystick = surface.Joystick, Is.Not.AllocatingGCMemory());
+            Assert.That(() => { joystick = surface.Joystick; }, Is.Not.AllocatingGCMemory());
             Assert.That(joystick.IsActive, Is.True);
         }
 

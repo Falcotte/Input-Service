@@ -56,6 +56,7 @@ namespace AngryKoala.Input
         private readonly List<object> _blockers = new();
         private readonly List<IPointerFilter> _pointerFilters = new();
         private readonly List<TrackedFinger> _fingers = new();
+        private readonly List<InputSurface> _areaSurfaces = new();
 
         private bool _isTouchSupportEnabled;
 
@@ -66,6 +67,7 @@ namespace AngryKoala.Input
         {
             base.Awake();
 
+            CreateConfiguredAreaSurfaces();
             UpdateContext();
 
             if (ServiceLocator.TryGet<IInputService>(out var registered) && !ReferenceEquals(registered, this))
@@ -107,7 +109,14 @@ namespace AngryKoala.Input
                 throw new ArgumentNullException(nameof(area));
             }
 
-            return null;
+            var surface = FindAreaSurface(area);
+
+            if (surface == null)
+            {
+                surface = CreateAreaSurface(area);
+            }
+
+            return surface;
         }
 
         public void Block(object source)
@@ -186,6 +195,14 @@ namespace AngryKoala.Input
             results.Clear();
             results.Add(new InputSurfaceData(_screen.Name, _screen.Area, _screen.PixelRect, _screen.TouchCount,
                 _screen.PrimaryTouch, _screen.Joystick, _screen.LastGesture));
+
+            for (var index = 0; index < _areaSurfaces.Count; index++)
+            {
+                var surface = _areaSurfaces[index];
+
+                results.Add(new InputSurfaceData(surface.Name, surface.Area, surface.PixelRect, surface.TouchCount,
+                    surface.PrimaryTouch, surface.Joystick, surface.LastGesture));
+            }
         }
 
         #region Internal Methods
@@ -198,7 +215,7 @@ namespace AngryKoala.Input
             UpdateContext();
             ProcessTouches(time);
             ProcessMouse(time);
-            _screen.CompleteFrame(time);
+            CompleteFrame(time);
             ProcessBack();
         }
 
@@ -223,15 +240,91 @@ namespace AngryKoala.Input
             }
         }
 
-        private void UpdateContext()
+        private void CreateConfiguredAreaSurfaces()
         {
-            var rules = _gestureSettings != null ? _gestureSettings.ToRules() : GestureRules.Default;
-            var pixelRect = new Rect(0f, 0f, UnityEngine.Screen.width, UnityEngine.Screen.height);
+            for (var index = 0; index < _areas.Count; index++)
+            {
+                var area = _areas[index];
 
-            _screen.SetContext(rules, GetDpi() / _centimetersPerInch, pixelRect);
+                if (area == null || FindAreaSurface(area) != null)
+                {
+                    continue;
+                }
+
+                CreateAreaSurface(area);
+            }
         }
 
-        private float GetDpi()
+        private InputSurface CreateAreaSurface(InputArea area)
+        {
+            var surface = new InputSurface(area.name, area);
+            _areaSurfaces.Add(surface);
+
+            UpdateAreaContext(surface, GetScreenRect(), UnityEngine.Screen.safeArea);
+
+            return surface;
+        }
+
+        private InputSurface FindAreaSurface(InputArea area)
+        {
+            for (var index = 0; index < _areaSurfaces.Count; index++)
+            {
+                if (ReferenceEquals(_areaSurfaces[index].Area, area))
+                {
+                    return _areaSurfaces[index];
+                }
+            }
+
+            return null;
+        }
+
+        private void UpdateContext()
+        {
+            var screenRect = GetScreenRect();
+            var safeArea = UnityEngine.Screen.safeArea;
+
+            _screen.SetContext(GetRules(_gestureSettings), GetPixelsPerCentimeter(_gestureSettings), screenRect);
+
+            for (var index = 0; index < _areaSurfaces.Count; index++)
+            {
+                UpdateAreaContext(_areaSurfaces[index], screenRect, safeArea);
+            }
+        }
+
+        private void UpdateAreaContext(InputSurface surface, Rect screenRect, Rect safeArea)
+        {
+            var area = surface.Area;
+
+            if (area == null)
+            {
+                surface.SetContext(GetRules(_gestureSettings), GetPixelsPerCentimeter(_gestureSettings), default);
+                return;
+            }
+
+            var gestureSettings = area.GestureSettings != null ? area.GestureSettings : _gestureSettings;
+            var pixelRect = area.GetPixelRect(screenRect, safeArea);
+            var restPosition = pixelRect.min + Vector2.Scale(area.FixedJoystickPosition, pixelRect.size);
+
+            surface.SetContext(GetRules(gestureSettings), GetPixelsPerCentimeter(gestureSettings), pixelRect);
+            surface.SetJoystick(area.JoystickMode, area.JoystickRadius, area.JoystickDeadZone, restPosition);
+        }
+
+        private static Rect GetScreenRect()
+        {
+            return new Rect(0f, 0f, UnityEngine.Screen.width, UnityEngine.Screen.height);
+        }
+
+        private static GestureRules GetRules(GestureSettings gestureSettings)
+        {
+            return gestureSettings != null ? gestureSettings.ToRules() : GestureRules.Default;
+        }
+
+        private static float GetPixelsPerCentimeter(GestureSettings gestureSettings)
+        {
+            return GetDpi(gestureSettings) / _centimetersPerInch;
+        }
+
+        private static float GetDpi(GestureSettings gestureSettings)
         {
             var dpi = UnityEngine.Screen.dpi;
 
@@ -240,12 +333,22 @@ namespace AngryKoala.Input
                 return dpi;
             }
 
-            if (_gestureSettings != null && _gestureSettings.FallbackDpi > 0f)
+            if (gestureSettings != null && gestureSettings.FallbackDpi > 0f)
             {
-                return _gestureSettings.FallbackDpi;
+                return gestureSettings.FallbackDpi;
             }
 
             return GestureSettings.DefaultFallbackDpi;
+        }
+
+        private void CompleteFrame(double time)
+        {
+            _screen.CompleteFrame(time);
+
+            for (var index = 0; index < _areaSurfaces.Count; index++)
+            {
+                _areaSurfaces[index].CompleteFrame(time);
+            }
         }
 
         private void ProcessTouches(double time)
@@ -376,6 +479,14 @@ namespace AngryKoala.Input
                 }
             }
 
+            for (var index = 0; index < _areaSurfaces.Count; index++)
+            {
+                if (_areaSurfaces[index].PixelRect.Contains(position))
+                {
+                    return _areaSurfaces[index];
+                }
+            }
+
             return _screen;
         }
 
@@ -489,7 +600,14 @@ namespace AngryKoala.Input
 
         private void CancelAllTouches()
         {
-            _screen.CancelAllTouches(Time.unscaledTimeAsDouble);
+            var time = Time.unscaledTimeAsDouble;
+
+            _screen.CancelAllTouches(time);
+
+            for (var index = 0; index < _areaSurfaces.Count; index++)
+            {
+                _areaSurfaces[index].CancelAllTouches(time);
+            }
         }
 
         private void IgnoreTrackedFingers()

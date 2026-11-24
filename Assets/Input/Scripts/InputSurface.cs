@@ -86,7 +86,7 @@ namespace AngryKoala.Input
             }
         }
 
-        public JoystickData Joystick => default;
+        public JoystickData Joystick => GetJoystick();
 
         public event Action<TouchData> OnTouchBegan
         {
@@ -158,11 +158,19 @@ namespace AngryKoala.Input
         private GestureRules _rules = GestureRules.Default;
         private float _pixelsPerCentimeter = 1f;
 
+        private JoystickMode _joystickMode;
+        private float _joystickRadiusCentimeters;
+        private float _joystickDeadZone;
+        private Vector2 _joystickRestPosition;
+        private Vector2 _joystickCenter;
+
         private bool _isPinching;
         private int _pinchFirstFingerId;
         private int _pinchSecondFingerId;
         private float _pinchStartDistance;
         private float _pinchPreviousDistance;
+
+        private const float _maximumDeadZone = 0.99f;
 
         private const string _tapGestureName = "Tap";
         private const string _holdGestureName = "Hold";
@@ -199,8 +207,15 @@ namespace AngryKoala.Input
             PixelRect = pixelRect;
         }
 
+        /// <summary>
+        /// Sets the joystick of the surface. May be called every frame. The rest position is in pixels.
+        /// </summary>
         public void SetJoystick(JoystickMode mode, float radiusCentimeters, float deadZone, Vector2 restPosition)
         {
+            _joystickMode = mode;
+            _joystickRadiusCentimeters = Mathf.Max(0f, radiusCentimeters);
+            _joystickDeadZone = Mathf.Clamp(deadZone, 0f, _maximumDeadZone);
+            _joystickRestPosition = restPosition;
         }
 
         public void BeginTouch(int fingerId, Vector2 position, double time)
@@ -221,6 +236,11 @@ namespace AngryKoala.Input
                 {
                     otherFinger.HasOtherFinger = true;
                 }
+            }
+
+            if (_fingers.Count == 0)
+            {
+                _joystickCenter = position;
             }
 
             _fingers.Add(finger);
@@ -245,6 +265,7 @@ namespace AngryKoala.Input
 
             if (IsPrimary(finger))
             {
+                PullJoystickCenter(finger);
                 ProcessPrimaryUpdate(finger, time);
             }
         }
@@ -367,6 +388,65 @@ namespace AngryKoala.Input
             }
 
             UpdateSwipeWhenCrossed(finger, touch);
+        }
+
+        private JoystickData GetJoystick()
+        {
+            if (_joystickMode == JoystickMode.None)
+            {
+                return default;
+            }
+
+            var radius = _joystickRadiusCentimeters * Mathf.Max(0f, _pixelsPerCentimeter);
+
+            if (_fingers.Count == 0)
+            {
+                return new JoystickData(false, _joystickRestPosition, _joystickRestPosition, radius, Vector2.zero);
+            }
+
+            var center = _joystickMode == JoystickMode.Fixed ? _joystickRestPosition : _joystickCenter;
+            var offset = _fingers[0].Position - center;
+            var distance = offset.magnitude;
+
+            var handlePosition = _fingers[0].Position;
+            var direction = Vector2.zero;
+
+            if (distance > radius)
+            {
+                handlePosition = distance > 0f ? center + offset / distance * radius : center;
+            }
+
+            if (radius > 0f && distance > 0f)
+            {
+                var magnitude = Mathf.Min(distance / radius, 1f);
+
+                if (magnitude > _joystickDeadZone)
+                {
+                    var length = (magnitude - _joystickDeadZone) / (1f - _joystickDeadZone);
+                    direction = offset / distance * length;
+                }
+            }
+
+            return new JoystickData(true, center, handlePosition, radius, direction);
+        }
+
+        private void PullJoystickCenter(Finger finger)
+        {
+            if (_joystickMode != JoystickMode.Following)
+            {
+                return;
+            }
+
+            var radius = _joystickRadiusCentimeters * Mathf.Max(0f, _pixelsPerCentimeter);
+            var offset = finger.Position - _joystickCenter;
+            var distance = offset.magnitude;
+
+            if (distance <= radius)
+            {
+                return;
+            }
+
+            _joystickCenter = finger.Position - offset / distance * radius;
         }
 
         private void UpdateHold(Finger finger, TouchData touch)
@@ -515,6 +595,7 @@ namespace AngryKoala.Input
             if (wasPrimary && _fingers.Count > 0)
             {
                 _fingers[0].BecomePrimaryByHandover(time);
+                _joystickCenter = _fingers[0].Position;
             }
 
             RefreshPinchPair();

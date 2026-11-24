@@ -51,7 +51,18 @@ namespace AngryKoala.Input
 
         internal Rect GetPixelRect(Rect screenRect, Rect safeArea)
         {
-            return default;
+            var baseRect = _space == InputAreaSpace.SafeArea ? safeArea : screenRect;
+
+            var minimumX = Mathf.Clamp01(_minimum.x);
+            var minimumY = Mathf.Clamp01(_minimum.y);
+            var maximumX = Mathf.Clamp01(_maximum.x);
+            var maximumY = Mathf.Clamp01(_maximum.y);
+
+            var width = Mathf.Max(0f, maximumX - minimumX) * baseRect.width;
+            var height = Mathf.Max(0f, maximumY - minimumY) * baseRect.height;
+
+            return new Rect(baseRect.x + minimumX * baseRect.width, baseRect.y + minimumY * baseRect.height, width,
+                height);
         }
     }
 }

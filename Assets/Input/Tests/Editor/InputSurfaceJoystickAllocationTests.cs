@@ -29,7 +29,7 @@ namespace AngryKoala.Input.Tests
 
             _joystick = Surface.Joystick;
 
-            Assert.That(() => _joystick = Surface.Joystick, Is.Not.AllocatingGCMemory());
+            Assert.That(() => { _joystick = Surface.Joystick; }, Is.Not.AllocatingGCMemory());
             Assert.That(_joystick.IsActive, Is.True);
         }
 
@@ -42,7 +42,7 @@ namespace AngryKoala.Input.Tests
 
             _joystick = Surface.Joystick;
 
-            Assert.That(() => _joystick = Surface.Joystick, Is.Not.AllocatingGCMemory());
+            Assert.That(() => { _joystick = Surface.Joystick; }, Is.Not.AllocatingGCMemory());
         }
 
         [TestCase(JoystickMode.Fixed)]
