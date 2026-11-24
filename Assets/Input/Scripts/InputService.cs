@@ -219,6 +219,46 @@ namespace AngryKoala.Input
             ProcessBack();
         }
 
+        internal void GetTrackedFingers(List<InputFingerData> results)
+        {
+            if (results == null)
+            {
+                throw new ArgumentNullException(nameof(results));
+            }
+
+            results.Clear();
+
+            for (var index = 0; index < _fingers.Count; index++)
+            {
+                var finger = _fingers[index];
+                var ownerName = finger.Owner != null ? finger.Owner.Name : null;
+
+                results.Add(new InputFingerData(finger.Id, finger.Id == _mouseFingerId, ownerName));
+            }
+        }
+
+        internal void GetBlockers(List<object> results)
+        {
+            if (results == null)
+            {
+                throw new ArgumentNullException(nameof(results));
+            }
+
+            results.Clear();
+            results.AddRange(_blockers);
+        }
+
+        internal void GetPointerFilters(List<IPointerFilter> results)
+        {
+            if (results == null)
+            {
+                throw new ArgumentNullException(nameof(results));
+            }
+
+            results.Clear();
+            results.AddRange(_pointerFilters);
+        }
+
         #endregion
 
         private void PruneDestroyed()
