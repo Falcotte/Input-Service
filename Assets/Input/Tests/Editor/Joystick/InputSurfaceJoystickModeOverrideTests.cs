@@ -199,7 +199,7 @@ namespace AngryKoala.Input.Tests
         {
             var screenSurface = CreateSurface(CreateRules());
 
-            LogAssert.Expect(LogType.Warning, new Regex("Joystick"));
+            LogAssert.Expect(LogType.Warning, new Regex("screen surface has no joystick"));
 
             screenSurface.JoystickMode = mode;
 

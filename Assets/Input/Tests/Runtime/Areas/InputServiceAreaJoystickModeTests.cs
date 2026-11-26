@@ -135,7 +135,7 @@ namespace AngryKoala.Input.Tests
         {
             yield return null;
 
-            LogAssert.Expect(LogType.Warning, new Regex("Joystick"));
+            LogAssert.Expect(LogType.Warning, new Regex("screen surface has no joystick"));
 
             ScreenSurface.JoystickMode = JoystickMode.Floating;
             yield return WaitFrames(3);
