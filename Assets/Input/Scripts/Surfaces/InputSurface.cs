@@ -594,7 +594,7 @@ namespace AngryKoala.Input
                 _ => _swipeRightGestureName
             };
 
-            _swipeHandlers.Raise(new SwipeData(touch, direction, GetDirection8(vector), speed));
+            _swipeHandlers.Raise(new SwipeData(touch, direction, GetCompassDirection(vector), speed));
         }
 
         private void CancelFinger(Finger finger, double time)
@@ -716,21 +716,21 @@ namespace AngryKoala.Input
             return vector.y >= 0f ? SwipeDirection.Up : SwipeDirection.Down;
         }
 
-        private static SwipeDirection8 GetDirection8(Vector2 vector)
+        private static SwipeCompassDirection GetCompassDirection(Vector2 vector)
         {
             var angle = Mathf.Atan2(vector.y, vector.x) * Mathf.Rad2Deg;
             var sector = (Mathf.RoundToInt(angle / _directionSectorDegrees) + _directionSectorCount) % _directionSectorCount;
 
             return sector switch
             {
-                0 => SwipeDirection8.Right,
-                1 => SwipeDirection8.UpRight,
-                2 => SwipeDirection8.Up,
-                3 => SwipeDirection8.UpLeft,
-                4 => SwipeDirection8.Left,
-                5 => SwipeDirection8.DownLeft,
-                6 => SwipeDirection8.Down,
-                _ => SwipeDirection8.DownRight
+                0 => SwipeCompassDirection.Right,
+                1 => SwipeCompassDirection.UpRight,
+                2 => SwipeCompassDirection.Up,
+                3 => SwipeCompassDirection.UpLeft,
+                4 => SwipeCompassDirection.Left,
+                5 => SwipeCompassDirection.DownLeft,
+                6 => SwipeCompassDirection.Down,
+                _ => SwipeCompassDirection.DownRight
             };
         }
     }

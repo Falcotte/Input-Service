@@ -13,7 +13,7 @@ All notable changes to this package are documented here. The format follows [Kee
 - `IInputService.OnBackPressed`, raised by Escape, also while input is blocked.
 - `IInputSurface` with the state `IsTouching`, `TouchCount`, `PrimaryTouch` and `Joystick`, and the events `OnTouchBegan`, `OnTouchEnded`, `OnTap`, `OnHold`, `OnDragBegan`, `OnDrag`, `OnDragEnded`, `OnSwipe` and `OnPinch`.
 - The `TouchData`, `SwipeData`, `PinchData`, `JoystickData` and `InputSurfaceData` readonly structs.
-- The `SwipeDirection`, `SwipeDirection8`, `SwipeTiming`, `JoystickMode` and `InputAreaSpace` enums.
+- The `SwipeDirection`, `SwipeCompassDirection`, `SwipeTiming`, `JoystickMode` and `InputAreaSpace` enums.
 - `InputArea` ScriptableObject (menu `Angry Koala/Input/Input Area`), with its rectangle, space, joystick settings and optional gesture settings.
 - `GestureSettings` ScriptableObject (menu `Angry Koala/Input/Gesture Settings`), with the tap, hold, drag and swipe thresholds in centimetres and seconds.
 - Joystick modes None, Fixed, Floating and Following.

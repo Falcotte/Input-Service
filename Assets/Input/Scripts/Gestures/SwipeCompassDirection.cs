@@ -1,6 +1,6 @@
 namespace AngryKoala.Input
 {
-    public enum SwipeDirection8
+    public enum SwipeCompassDirection
     {
         Up,
         UpRight,

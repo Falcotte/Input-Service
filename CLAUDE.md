@@ -55,7 +55,7 @@ The package lives entirely under `Assets/Input/`. Its namespace is `AngryKoala.I
 
 **Data**: `TouchData`, `SwipeData`, `PinchData`, `JoystickData` and `InputSurfaceData` (`readonly struct`). Most of their constructors are internal.
 
-**Enums**: `SwipeDirection`, `SwipeDirection8`, `SwipeTiming`, `JoystickMode` and `InputAreaSpace`.
+**Enums**: `SwipeDirection`, `SwipeCompassDirection`, `SwipeTiming`, `JoystickMode` and `InputAreaSpace`.
 
 **`InputArea`** (ScriptableObject, menu `Angry Koala/Input/Input Area`) and **`GestureSettings`** (ScriptableObject, menu `Angry Koala/Input/Gesture Settings`). The area is the key for `GetArea`.
 

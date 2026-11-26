@@ -13,19 +13,19 @@ namespace AngryKoala.Input
 
         public SwipeDirection Direction { get; }
 
-        public SwipeDirection8 Direction8 { get; }
+        public SwipeCompassDirection CompassDirection { get; }
 
         /// <summary>
         /// Centimetres per second, over the whole swipe.
         /// </summary>
         public float Speed { get; }
 
-        internal SwipeData(TouchData touch, SwipeDirection direction, SwipeDirection8 direction8, float speed)
+        internal SwipeData(TouchData touch, SwipeDirection direction, SwipeCompassDirection compassDirection, float speed)
         {
             Touch = touch;
             Vector = touch.TotalDelta;
             Direction = direction;
-            Direction8 = direction8;
+            CompassDirection = compassDirection;
             Speed = speed;
         }
     }

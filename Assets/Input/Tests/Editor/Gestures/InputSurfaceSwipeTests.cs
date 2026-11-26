@@ -169,26 +169,26 @@ namespace AngryKoala.Input.Tests
             Assert.That(_recorder.Swipes[0].Touch.Duration, Is.EqualTo(0.2f).Within(0.001f));
         }
 
-        [TestCase(110f, 0f, SwipeDirection.Right, SwipeDirection8.Right)]
-        [TestCase(110f, 20f, SwipeDirection.Right, SwipeDirection8.Right)]
-        [TestCase(110f, 63f, SwipeDirection.Right, SwipeDirection8.UpRight)]
-        [TestCase(110f, 110f, SwipeDirection.Up, SwipeDirection8.UpRight)]
-        [TestCase(63f, 110f, SwipeDirection.Up, SwipeDirection8.UpRight)]
-        [TestCase(40f, 110f, SwipeDirection.Up, SwipeDirection8.Up)]
-        [TestCase(0f, 110f, SwipeDirection.Up, SwipeDirection8.Up)]
-        [TestCase(-110f, 110f, SwipeDirection.Up, SwipeDirection8.UpLeft)]
-        [TestCase(-110f, 63f, SwipeDirection.Left, SwipeDirection8.UpLeft)]
-        [TestCase(-110f, 20f, SwipeDirection.Left, SwipeDirection8.Left)]
-        [TestCase(-110f, 0f, SwipeDirection.Left, SwipeDirection8.Left)]
-        [TestCase(-110f, -63f, SwipeDirection.Left, SwipeDirection8.DownLeft)]
-        [TestCase(-110f, -110f, SwipeDirection.Down, SwipeDirection8.DownLeft)]
-        [TestCase(-40f, -110f, SwipeDirection.Down, SwipeDirection8.Down)]
-        [TestCase(0f, -110f, SwipeDirection.Down, SwipeDirection8.Down)]
-        [TestCase(110f, -110f, SwipeDirection.Down, SwipeDirection8.DownRight)]
-        [TestCase(110f, -63f, SwipeDirection.Right, SwipeDirection8.DownRight)]
-        [TestCase(110f, -20f, SwipeDirection.Right, SwipeDirection8.Right)]
+        [TestCase(110f, 0f, SwipeDirection.Right, SwipeCompassDirection.Right)]
+        [TestCase(110f, 20f, SwipeDirection.Right, SwipeCompassDirection.Right)]
+        [TestCase(110f, 63f, SwipeDirection.Right, SwipeCompassDirection.UpRight)]
+        [TestCase(110f, 110f, SwipeDirection.Up, SwipeCompassDirection.UpRight)]
+        [TestCase(63f, 110f, SwipeDirection.Up, SwipeCompassDirection.UpRight)]
+        [TestCase(40f, 110f, SwipeDirection.Up, SwipeCompassDirection.Up)]
+        [TestCase(0f, 110f, SwipeDirection.Up, SwipeCompassDirection.Up)]
+        [TestCase(-110f, 110f, SwipeDirection.Up, SwipeCompassDirection.UpLeft)]
+        [TestCase(-110f, 63f, SwipeDirection.Left, SwipeCompassDirection.UpLeft)]
+        [TestCase(-110f, 20f, SwipeDirection.Left, SwipeCompassDirection.Left)]
+        [TestCase(-110f, 0f, SwipeDirection.Left, SwipeCompassDirection.Left)]
+        [TestCase(-110f, -63f, SwipeDirection.Left, SwipeCompassDirection.DownLeft)]
+        [TestCase(-110f, -110f, SwipeDirection.Down, SwipeCompassDirection.DownLeft)]
+        [TestCase(-40f, -110f, SwipeDirection.Down, SwipeCompassDirection.Down)]
+        [TestCase(0f, -110f, SwipeDirection.Down, SwipeCompassDirection.Down)]
+        [TestCase(110f, -110f, SwipeDirection.Down, SwipeCompassDirection.DownRight)]
+        [TestCase(110f, -63f, SwipeDirection.Right, SwipeCompassDirection.DownRight)]
+        [TestCase(110f, -20f, SwipeDirection.Right, SwipeCompassDirection.Right)]
         public void Swipe_Vector_GivesTheDirectionAndTheNearestOfEight(float x, float y, SwipeDirection direction,
-            SwipeDirection8 direction8)
+            SwipeCompassDirection compassDirection)
         {
             _surface.BeginTouch(1, Start, 0.0);
             _surface.UpdateTouch(1, Offset(x, y), 0.1);
@@ -196,7 +196,7 @@ namespace AngryKoala.Input.Tests
             Assert.That(_recorder.Swipes, Has.Count.EqualTo(1));
             Assert.That(_recorder.Swipes[0].Vector, Is.EqualTo(new Vector2(x, y)));
             Assert.That(_recorder.Swipes[0].Direction, Is.EqualTo(direction));
-            Assert.That(_recorder.Swipes[0].Direction8, Is.EqualTo(direction8));
+            Assert.That(_recorder.Swipes[0].CompassDirection, Is.EqualTo(compassDirection));
         }
 
         [TestCase(110f, 0f, "Swipe Right")]
@@ -374,7 +374,7 @@ namespace AngryKoala.Input.Tests
             Assert.That(_recorder.Swipes[0].Touch.FingerId, Is.EqualTo(1));
             Assert.That(_recorder.Swipes[0].Vector, Is.EqualTo(new Vector2(0f, 150f)));
             Assert.That(_recorder.Swipes[0].Direction, Is.EqualTo(SwipeDirection.Up));
-            Assert.That(_recorder.Swipes[0].Direction8, Is.EqualTo(SwipeDirection8.Up));
+            Assert.That(_recorder.Swipes[0].CompassDirection, Is.EqualTo(SwipeCompassDirection.Up));
         }
 
         [Test]

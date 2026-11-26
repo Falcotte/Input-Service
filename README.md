@@ -109,7 +109,7 @@ public readonly struct SwipeData
     public TouchData Touch { get; }
     public Vector2 Vector { get; }            // From where the touch began to where the swipe was recognised, in pixels.
     public SwipeDirection Direction { get; }
-    public SwipeDirection8 Direction8 { get; }
+    public SwipeCompassDirection CompassDirection { get; }
     public float Speed { get; }               // Centimetres per second, over the whole swipe.
 }
 
@@ -137,7 +137,7 @@ public enum SwipeTiming { WhenCrossed, OnRelease }
 
 public enum SwipeDirection { Up, Down, Left, Right }
 
-public enum SwipeDirection8 { Up, UpRight, Right, DownRight, Down, DownLeft, Left, UpLeft }
+public enum SwipeCompassDirection { Up, UpRight, Right, DownRight, Down, DownLeft, Left, UpLeft }
 ```
 
 `InputSurfaceData` is the struct that `GetData` fills. It has the name, the area (null for the screen), the pixel rectangle, the touch count, the primary touch, the joystick and the last gesture name.
