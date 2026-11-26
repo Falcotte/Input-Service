@@ -18,6 +18,8 @@ namespace AngryKoala.Input
 
         JoystickData Joystick { get; }
 
+        JoystickMode JoystickMode { get; set; }
+
         event Action<TouchData> OnTouchBegan;
         event Action<TouchData> OnTouchEnded;
         event Action<TouchData> OnTap;

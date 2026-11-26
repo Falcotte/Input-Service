@@ -88,6 +88,12 @@ namespace AngryKoala.Input
 
         public JoystickData Joystick => GetJoystick();
 
+        public JoystickMode JoystickMode
+        {
+            get => _joystickMode;
+            set { }
+        }
+
         public event Action<TouchData> OnTouchBegan
         {
             add => _touchBeganHandlers.Add(value);

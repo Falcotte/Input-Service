@@ -55,6 +55,12 @@ namespace AngryKoala.Input
         private float _fadeDuration = 0.15f;
         public float FadeDuration => _fadeDuration;
 
+        [SerializeField]
+        [Min(0f)]
+        [Tooltip("How long the handle, and a joystick that does not hide, take to move back after the finger lifts, in seconds. Not affected by the time scale.")]
+        private float _returnDuration = 0.1f;
+        public float ReturnDuration => _returnDuration;
+
         internal VisualElement Background => _background;
 
         internal VisualElement Handle => _handle;

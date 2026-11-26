@@ -19,7 +19,7 @@ namespace AngryKoala.Input.Tests
 
         protected static readonly Vector2AbsoluteEqualityComparer PositionComparer = new(0.05f);
 
-        internal InputSurface Surface { get; private set; }
+        internal InputSurface Surface { get; private protected set; }
 
         private double _time;
 

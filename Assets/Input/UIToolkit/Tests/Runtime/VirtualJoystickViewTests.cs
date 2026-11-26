@@ -28,10 +28,14 @@ namespace AngryKoala.Input.Tests
             [SerializeField]
             private float _fadeDuration = 0.15f;
 
-            public ViewFields(float handleSize = 0.5f, bool hideWhenIdle = true)
+            [SerializeField]
+            private float _returnDuration = 0.1f;
+
+            public ViewFields(float handleSize = 0.5f, bool hideWhenIdle = true, float returnDuration = 0.1f)
             {
                 _handleSize = handleSize;
                 _hideWhenIdle = hideWhenIdle;
+                _returnDuration = returnDuration;
             }
         }
 
@@ -42,6 +46,7 @@ namespace AngryKoala.Input.Tests
         private const float _fadeDuration = 0.15f;
         private const int _fingerId = 1;
         private const float _panelScale = 2f;
+        private const float _longReturnDuration = 0.5f;
 
         #region Elements
 
@@ -485,6 +490,296 @@ namespace AngryKoala.Input.Tests
 
         #endregion
 
+        #region Mode of the surface
+
+        [UnityTest]
+        public IEnumerator HideWhenIdle_IdleFixedJoystick_OpacityIsOne()
+        {
+            yield return CreateSceneWithService();
+
+            var view = AddView(CreateArea(JoystickMode.Fixed, new Vector2(0.5f, 0.5f)));
+            Assert.That(view.HideWhenIdle, Is.True);
+            yield return WaitFrames(5);
+
+            Assert.That(view.Background.resolvedStyle.opacity, Is.EqualTo(1f).Within(_opacityTolerance));
+            Assert.That(view.Handle.resolvedStyle.opacity, Is.EqualTo(1f).Within(_opacityTolerance));
+        }
+
+        [UnityTest]
+        public IEnumerator HideWhenIdle_SurfaceModeSetToFixedOnAFloatingArea_IdleJoystickIsVisible()
+        {
+            yield return CreateSceneWithService();
+
+            var area = CreateArea(JoystickMode.Floating, new Vector2(0.5f, 0.5f));
+            var view = AddView(area);
+            yield return WaitFrames(2);
+
+            Service.GetArea(area).JoystickMode = JoystickMode.Fixed;
+            yield return WaitFrames(5);
+
+            Assert.That(view.HideWhenIdle, Is.True);
+            Assert.That(view.Background.resolvedStyle.opacity, Is.EqualTo(1f).Within(_opacityTolerance));
+            Assert.That(view.Handle.resolvedStyle.opacity, Is.EqualTo(1f).Within(_opacityTolerance));
+        }
+
+        [UnityTest]
+        public IEnumerator SurfaceModeSetToFloatingOnAnAreaWithNone_BothElementsAreShown()
+        {
+            yield return CreateSceneWithService();
+
+            var area = CreateArea(JoystickMode.None);
+            var view = AddView(area);
+            yield return WaitFrames(2);
+
+            Service.GetArea(area).JoystickMode = JoystickMode.Floating;
+            yield return WaitFrames(3);
+
+            Assert.That(view.Background.style.display.value, Is.Not.EqualTo(DisplayStyle.None));
+            Assert.That(view.Handle.style.display.value, Is.Not.EqualTo(DisplayStyle.None));
+        }
+
+        [UnityTest]
+        public IEnumerator SurfaceModeSetToNoneOnAFloatingArea_BothElementsAreHidden()
+        {
+            yield return CreateSceneWithService();
+
+            var area = CreateArea(JoystickMode.Floating);
+            var view = AddView(area);
+            yield return WaitFrames(3);
+
+            Service.GetArea(area).JoystickMode = JoystickMode.None;
+            yield return WaitFrames(3);
+
+            Assert.That(view.Background.style.display.value, Is.EqualTo(DisplayStyle.None));
+            Assert.That(view.Handle.style.display.value, Is.EqualTo(DisplayStyle.None));
+        }
+
+        #endregion
+
+        #region Return after the lift
+
+        [UnityTest]
+        public IEnumerator ReturnDuration_DefaultsToATenthOfASecond()
+        {
+            yield return CreateSceneWithService();
+
+            var view = AddView(CreateArea(JoystickMode.Floating));
+            yield return WaitFrames(2);
+
+            Assert.That(view.ReturnDuration, Is.EqualTo(0.1f).Within(0.0001f));
+        }
+
+        [UnityTest]
+        public IEnumerator HidingJoystick_OneFrameAfterTheLift_BackgroundStaysWhereItWasLastActive()
+        {
+            yield return CreateSceneWithService();
+
+            var area = CreateArea(JoystickMode.Floating);
+            var view = AddView(area, new ViewFields(returnDuration: _longReturnDuration));
+            yield return WaitFrames(2);
+
+            yield return DragHandleAway(area, ScreenPoint(0.25f, 0.4f));
+
+            var activeBackgroundCenter = view.Background.worldBound.center;
+
+            Touch.End(_fingerId);
+            yield return WaitFrames(2);
+
+            Assert.That(Service.GetArea(area).Joystick.IsActive, Is.False);
+            Assert.That(view.Background.worldBound.center, Is.EqualTo(activeBackgroundCenter).Using(_panelPositionComparer));
+        }
+
+        [UnityTest]
+        public IEnumerator HidingJoystick_AfterTheLiftAndTheReturnDuration_HandleIsAtTheBackgroundCenter()
+        {
+            yield return CreateSceneWithService();
+
+            var area = CreateArea(JoystickMode.Floating);
+            var view = AddView(area, new ViewFields(returnDuration: _longReturnDuration));
+            yield return WaitFrames(2);
+
+            yield return DragHandleAway(area, ScreenPoint(0.25f, 0.4f));
+
+            var activeBackgroundCenter = view.Background.worldBound.center;
+
+            Assert.That(view.Handle.worldBound.center, Is.Not.EqualTo(activeBackgroundCenter).Using(_panelPositionComparer));
+
+            Touch.End(_fingerId);
+            yield return new WaitForSecondsRealtime(_longReturnDuration + SettleSeconds);
+            yield return WaitFrames(2);
+
+            Assert.That(view.Background.worldBound.center, Is.EqualTo(activeBackgroundCenter).Using(_panelPositionComparer));
+            Assert.That(view.Handle.worldBound.center, Is.EqualTo(view.Background.worldBound.center).Using(_panelPositionComparer));
+        }
+
+        [UnityTest]
+        public IEnumerator HidingJoystick_OneFrameAfterTheLift_HandleIsStillOnItsWayBack()
+        {
+            yield return CreateSceneWithService();
+
+            var area = CreateArea(JoystickMode.Floating);
+            var view = AddView(area, new ViewFields(returnDuration: _longReturnDuration));
+            yield return WaitFrames(2);
+
+            yield return DragHandleAway(area, ScreenPoint(0.25f, 0.4f));
+
+            Touch.End(_fingerId);
+            yield return WaitFrames(2);
+
+            Assert.That(view.Handle.worldBound.center, Is.Not.EqualTo(view.Background.worldBound.center).Using(_panelPositionComparer));
+        }
+
+        [UnityTest]
+        public IEnumerator HidingJoystick_WithReturnDurationZero_OneFrameAfterTheLiftHandleIsAtTheBackgroundCenter()
+        {
+            yield return CreateSceneWithService();
+
+            var area = CreateArea(JoystickMode.Floating);
+            var view = AddView(area, new ViewFields(returnDuration: 0f));
+            yield return WaitFrames(2);
+
+            yield return DragHandleAway(area, ScreenPoint(0.25f, 0.4f));
+
+            var activeBackgroundCenter = view.Background.worldBound.center;
+
+            Touch.End(_fingerId);
+            yield return WaitFrames(2);
+
+            Assert.That(view.Background.worldBound.center, Is.EqualTo(activeBackgroundCenter).Using(_panelPositionComparer));
+            Assert.That(view.Handle.worldBound.center, Is.EqualTo(activeBackgroundCenter).Using(_panelPositionComparer));
+        }
+
+        [UnityTest]
+        public IEnumerator ShownJoystick_OneFrameAfterTheLift_BackgroundIsNotYetAtTheRestPosition()
+        {
+            yield return CreateSceneWithService();
+
+            var area = CreateArea(JoystickMode.Floating);
+            var view = AddView(area, new ViewFields(hideWhenIdle: false, returnDuration: _longReturnDuration));
+            yield return WaitFrames(2);
+
+            yield return DragHandleAway(area, ScreenPoint(0.25f, 0.4f));
+
+            Touch.End(_fingerId);
+            yield return WaitFrames(2);
+
+            var joystick = Service.GetArea(area).Joystick;
+            var restCenter = ScreenToPanel(joystick.Center);
+
+            Assert.That(joystick.IsActive, Is.False);
+            Assert.That(Vector2.Distance(view.Background.worldBound.center, restCenter), Is.GreaterThan(_panelTolerance));
+        }
+
+        [UnityTest]
+        public IEnumerator ShownJoystick_AfterTheLiftAndTheReturnDuration_BackgroundIsAtTheRestPositionAndHandleInIt()
+        {
+            yield return CreateSceneWithService();
+
+            var area = CreateArea(JoystickMode.Floating);
+            var view = AddView(area, new ViewFields(hideWhenIdle: false, returnDuration: _longReturnDuration));
+            yield return WaitFrames(2);
+
+            yield return DragHandleAway(area, ScreenPoint(0.25f, 0.4f));
+
+            Touch.End(_fingerId);
+            yield return new WaitForSecondsRealtime(_longReturnDuration + SettleSeconds);
+            yield return WaitFrames(2);
+
+            var joystick = Service.GetArea(area).Joystick;
+            var restCenter = ScreenToPanel(joystick.Center);
+
+            Assert.That(view.Background.worldBound.center, Is.EqualTo(restCenter).Using(_panelPositionComparer));
+            Assert.That(view.Handle.worldBound.center, Is.EqualTo(restCenter).Using(_panelPositionComparer));
+        }
+
+        [UnityTest]
+        public IEnumerator FixedJoystick_OneFrameAfterTheLift_OnlyTheHandleIsStillReturning()
+        {
+            yield return CreateSceneWithService();
+
+            var area = CreateArea(JoystickMode.Fixed, new Vector2(0.5f, 0.5f));
+            var view = AddView(area, new ViewFields(returnDuration: _longReturnDuration));
+            yield return WaitFrames(2);
+
+            var restPosition = ScreenPoint(0.25f, 0.5f);
+
+            yield return DragHandleAway(area, restPosition);
+
+            Touch.End(_fingerId);
+            yield return WaitFrames(2);
+
+            Assert.That(view.Background.worldBound.center, Is.EqualTo(ScreenToPanel(restPosition)).Using(_panelPositionComparer));
+            Assert.That(view.Handle.worldBound.center, Is.Not.EqualTo(view.Background.worldBound.center).Using(_panelPositionComparer));
+            Assert.That(view.Background.resolvedStyle.opacity, Is.EqualTo(1f).Within(_opacityTolerance));
+        }
+
+        [UnityTest]
+        public IEnumerator FixedJoystick_AfterTheLiftAndTheReturnDuration_HandleIsAtTheBackgroundCenter()
+        {
+            yield return CreateSceneWithService();
+
+            var area = CreateArea(JoystickMode.Fixed, new Vector2(0.5f, 0.5f));
+            var view = AddView(area, new ViewFields(returnDuration: _longReturnDuration));
+            yield return WaitFrames(2);
+
+            var restPosition = ScreenPoint(0.25f, 0.5f);
+
+            yield return DragHandleAway(area, restPosition);
+
+            Touch.End(_fingerId);
+            yield return new WaitForSecondsRealtime(_longReturnDuration + SettleSeconds);
+            yield return WaitFrames(2);
+
+            Assert.That(view.Background.worldBound.center, Is.EqualTo(ScreenToPanel(restPosition)).Using(_panelPositionComparer));
+            Assert.That(view.Handle.worldBound.center, Is.EqualTo(view.Background.worldBound.center).Using(_panelPositionComparer));
+        }
+
+        [UnityTest]
+        public IEnumerator FixedJoystick_WithReturnDurationZero_OneFrameAfterTheLiftHandleIsAtTheBackgroundCenter()
+        {
+            yield return CreateSceneWithService();
+
+            var area = CreateArea(JoystickMode.Fixed, new Vector2(0.5f, 0.5f));
+            var view = AddView(area, new ViewFields(returnDuration: 0f));
+            yield return WaitFrames(2);
+
+            var restPosition = ScreenPoint(0.25f, 0.5f);
+
+            yield return DragHandleAway(area, restPosition);
+
+            Touch.End(_fingerId);
+            yield return WaitFrames(2);
+
+            Assert.That(view.Handle.worldBound.center, Is.EqualTo(view.Background.worldBound.center).Using(_panelPositionComparer));
+            Assert.That(view.Handle.worldBound.center, Is.EqualTo(ScreenToPanel(restPosition)).Using(_panelPositionComparer));
+        }
+
+        [UnityTest]
+        public IEnumerator FloatingJoystick_PressedAgainDuringTheReturn_PlacementFollowsTheSurfaceAtOnce()
+        {
+            yield return CreateSceneWithService();
+
+            var area = CreateArea(JoystickMode.Floating);
+            var view = AddView(area, new ViewFields(hideWhenIdle: false, returnDuration: _longReturnDuration));
+            yield return WaitFrames(2);
+
+            yield return DragHandleAway(area, ScreenPoint(0.25f, 0.4f));
+
+            Touch.End(_fingerId);
+            yield return WaitFrames(2);
+
+            var secondTouch = ScreenPoint(0.15f, 0.7f);
+
+            Touch.Begin(_fingerId, secondTouch);
+            yield return WaitFrames(3);
+
+            Assert.That(Service.GetArea(area).Joystick.IsActive, Is.True);
+            Assert.That(view.Background.worldBound.center, Is.EqualTo(ScreenToPanel(secondTouch)).Using(_panelPositionComparer));
+            Assert.That(view.Handle.worldBound.center, Is.EqualTo(ScreenToPanel(secondTouch)).Using(_panelPositionComparer));
+        }
+
+        #endregion
+
         #region Pointer filter
 
         [UnityTest]
@@ -540,6 +835,20 @@ namespace AngryKoala.Input.Tests
             view.SetArea(area);
 
             return view;
+        }
+
+        /// <summary>
+        /// Puts a finger down at the position, then moves it half a radius to the right.
+        /// </summary>
+        private IEnumerator DragHandleAway(InputArea area, Vector2 touchPosition)
+        {
+            Touch.Begin(_fingerId, touchPosition);
+            yield return WaitFrames(4);
+
+            var radius = Service.GetArea(area).Joystick.Radius;
+
+            Touch.Move(_fingerId, touchPosition + new Vector2(radius * 0.5f, 0f));
+            yield return WaitFrames(4);
         }
 
         private void AssertPlacedLikeJoystick(VirtualJoystickView view, JoystickData joystick)
