@@ -18,6 +18,11 @@ namespace AngryKoala.Input
 
         JoystickData Joystick { get; }
 
+        /// <summary>
+        /// The mode of the joystick on this surface: the one set here, otherwise the one of the area asset. Setting it
+        /// overrides the asset for this surface only and never changes the asset. The screen surface has no joystick:
+        /// it stays None and setting another mode logs a warning.
+        /// </summary>
         JoystickMode JoystickMode { get; set; }
 
         event Action<TouchData> OnTouchBegan;

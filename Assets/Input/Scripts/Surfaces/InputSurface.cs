@@ -90,8 +90,22 @@ namespace AngryKoala.Input
 
         public JoystickMode JoystickMode
         {
-            get => _joystickMode;
-            set { }
+            get => _hasJoystickModeOverride ? _overrideJoystickMode : _configuredJoystickMode;
+            set
+            {
+                if (Area == null)
+                {
+                    if (value != JoystickMode.None)
+                    {
+                        Debug.LogWarning(_screenJoystickWarning);
+                    }
+
+                    return;
+                }
+
+                _overrideJoystickMode = value;
+                _hasJoystickModeOverride = true;
+            }
         }
 
         public event Action<TouchData> OnTouchBegan
@@ -164,7 +178,9 @@ namespace AngryKoala.Input
         private GestureRules _rules = GestureRules.Default;
         private float _pixelsPerCentimeter = 1f;
 
-        private JoystickMode _joystickMode;
+        private JoystickMode _configuredJoystickMode;
+        private JoystickMode _overrideJoystickMode;
+        private bool _hasJoystickModeOverride;
         private float _joystickRadiusCentimeters;
         private float _joystickDeadZone;
         private Vector2 _joystickRestPosition;
@@ -179,6 +195,9 @@ namespace AngryKoala.Input
         private const float _pinchCenterWeight = 0.5f;
         private const float _directionSectorDegrees = 45f;
         private const int _directionSectorCount = 8;
+
+        private const string _screenJoystickWarning =
+            "The screen surface has no joystick. Set the JoystickMode of an area's surface instead.";
 
         private const string _tapGestureName = "Tap";
         private const string _holdGestureName = "Hold";
@@ -220,7 +239,7 @@ namespace AngryKoala.Input
         /// </summary>
         public void SetJoystick(JoystickMode mode, float radiusCentimeters, float deadZone, Vector2 restPosition)
         {
-            _joystickMode = mode;
+            _configuredJoystickMode = mode;
             _joystickRadiusCentimeters = Mathf.Max(0f, radiusCentimeters);
             _joystickDeadZone = Mathf.Clamp(deadZone, 0f, InputArea.MaximumJoystickDeadZone);
             _joystickRestPosition = restPosition;
@@ -423,7 +442,9 @@ namespace AngryKoala.Input
 
         private JoystickData GetJoystick()
         {
-            if (_joystickMode == JoystickMode.None)
+            var mode = JoystickMode;
+
+            if (mode == JoystickMode.None)
             {
                 return default;
             }
@@ -435,7 +456,7 @@ namespace AngryKoala.Input
                 return new JoystickData(false, _joystickRestPosition, _joystickRestPosition, radius, Vector2.zero);
             }
 
-            var center = _joystickMode == JoystickMode.Fixed ? _joystickRestPosition : _joystickCenter;
+            var center = mode == JoystickMode.Fixed ? _joystickRestPosition : _joystickCenter;
             var offset = _fingers[0].Position - center;
             var distance = offset.magnitude;
 
@@ -463,7 +484,7 @@ namespace AngryKoala.Input
 
         private void PullJoystickCenter(Finger finger)
         {
-            if (_joystickMode != JoystickMode.Following)
+            if (JoystickMode != JoystickMode.Following)
             {
                 return;
             }
