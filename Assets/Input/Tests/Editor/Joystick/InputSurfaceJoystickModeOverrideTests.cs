@@ -103,6 +103,17 @@ namespace AngryKoala.Input.Tests
         }
 
         [Test]
+        public void JoystickMode_WhenSet_IsKeptWhenOnlyTheRadiusAndTheDeadZoneChange()
+        {
+            SetJoystick(JoystickMode.Floating);
+
+            Surface.JoystickMode = JoystickMode.Fixed;
+            SetJoystick(JoystickMode.Floating, 0.5f, 2f);
+
+            Assert.That(Surface.JoystickMode, Is.EqualTo(JoystickMode.Fixed));
+        }
+
+        [Test]
         public void JoystickMode_SetBeforeTheFirstSetJoystick_IsKept()
         {
             Surface.JoystickMode = JoystickMode.Fixed;
