@@ -109,11 +109,13 @@ namespace AngryKoala.Input.Tests
         }
 
         /// <summary>
-        /// The panel is built in the next frame, so wait a frame before reading the root.
+        /// The panel is built in the next frame, so wait a frame before reading the root. The panel gets an empty
+        /// theme, because Unity warns about a panel that has none.
         /// </summary>
         protected void CreateDocument(float panelScale = 1f)
         {
             PanelSettings = Track(ScriptableObject.CreateInstance<PanelSettings>());
+            PanelSettings.themeStyleSheet = Track(ScriptableObject.CreateInstance<ThemeStyleSheet>());
 
             if (!Mathf.Approximately(panelScale, 1f))
             {
