@@ -25,6 +25,9 @@ namespace AngryKoala.Input
         private string _blockedText = string.Empty;
         private string _filtersText = string.Empty;
 
+        private int _reservedStatusLines = _minimumStatusLines;
+        private int _reservedFingerRows = _minimumFingerRows;
+
         private static GUIStyle _headerStyle;
         private static GUIStyle _cellStyle;
         private static GUIStyle _detailStyle;
@@ -46,6 +49,9 @@ namespace AngryKoala.Input
         private const float _detailIndent = 16f;
         private const float _defaultToolbarHeight = 18f;
         private const float _refreshButtonWidth = 70f;
+
+        private const int _minimumStatusLines = 2;
+        private const int _minimumFingerRows = 1;
 
         private const float _wideMinimumWidth = 760f;
         private const float _wideAspectRatio = 1.6f;
@@ -163,6 +169,7 @@ namespace AngryKoala.Input
             {
                 case PlayModeStateChange.EnteredPlayMode:
                     GetService();
+                    ResetReservedHeights();
                     Repaint();
                     break;
 
@@ -289,6 +296,16 @@ namespace AngryKoala.Input
             }
 
             _filtersText = $"Pointer filters: {_pointerFilters.Count}";
+
+            _reservedStatusLines = Mathf.Max(_reservedStatusLines,
+                _minimumStatusLines + _blockerLines.Count + _filterLines.Count);
+            _reservedFingerRows = Mathf.Max(_reservedFingerRows, _fingers.Count);
+        }
+
+        private void ResetReservedHeights()
+        {
+            _reservedStatusLines = _minimumStatusLines;
+            _reservedFingerRows = _minimumFingerRows;
         }
 
         private void DrawContent()
@@ -416,19 +433,21 @@ namespace AngryKoala.Input
         {
             Rect inner = DrawSectionFrame(box, "Fingers");
 
-            if (_fingers.Count == 0)
-            {
-                GUI.Label(GetLineRect(inner, 0), "No tracked fingers.", _cellStyle);
-                return;
-            }
-
-            var table = new Rect(inner.x, inner.y, inner.width, (_fingers.Count + 1) * _rowHeight);
+            var table = new Rect(inner.x, inner.y, inner.width, (_reservedFingerRows + 1) * _rowHeight);
             DrawTable(table, _fingerHeaders, _fingerWeights, _fingerWidths);
 
-            for (int index = 0; index < _fingers.Count; index++)
+            for (int index = 0; index < _reservedFingerRows; index++)
             {
-                InputFingerData finger = _fingers[index];
                 int row = index + 1;
+
+                if (index >= _fingers.Count)
+                {
+                    DrawCell(table, _fingerWidths, row, 0, _noneLabel);
+                    DrawCell(table, _fingerWidths, row, 1, _noneLabel);
+                    continue;
+                }
+
+                InputFingerData finger = _fingers[index];
 
                 DrawCell(table, _fingerWidths, row, 0, finger.IsMouse ? _mouseLabel : finger.Id.ToString());
                 DrawCell(table, _fingerWidths, row, 1, finger.OwnerName ?? _ignoredLabel);
@@ -577,8 +596,7 @@ namespace AngryKoala.Input
 
         private float GetStatusHeight()
         {
-            int lineCount = 2 + _blockerLines.Count + _filterLines.Count;
-            return _sectionChromeHeight + lineCount * _lineHeight;
+            return _sectionChromeHeight + _reservedStatusLines * _lineHeight;
         }
 
         private float GetSurfacesHeight()
@@ -588,8 +606,7 @@ namespace AngryKoala.Input
 
         private float GetFingersHeight()
         {
-            float contentHeight = _fingers.Count == 0 ? _lineHeight : (_fingers.Count + 1) * _rowHeight;
-            return _sectionChromeHeight + contentHeight;
+            return _sectionChromeHeight + (_reservedFingerRows + 1) * _rowHeight;
         }
 
         private static float GetToolbarHeight()
