@@ -1,0 +1,19 @@
+{
+    "name": "AngryKoala.Input.UIToolkit.Editor",
+    "rootNamespace": "AngryKoala.Input",
+    "references": [
+        "AngryKoala.Input",
+        "AngryKoala.Input.UIToolkit"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

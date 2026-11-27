@@ -1,0 +1,19 @@
+{
+    "name": "AngryKoala.Input.Editor",
+    "rootNamespace": "AngryKoala.Input",
+    "references": [
+        "AngryKoala.Input",
+        "AngryKoala.Services"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

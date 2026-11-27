@@ -1,0 +1,14 @@
+{
+  "name": "com.angrykoala.input",
+  "version": "1.0.0",
+  "displayName": "Angry Koala Input",
+  "description": "A touch input service for Unity on the Input System: the whole screen and areas of it as surfaces, tap, hold, drag, swipe and pinch, a virtual joystick, and scripted touches for tests.",
+  "unity": "6000.3",
+  "author": {
+    "name": "Angry Koala"
+  },
+  "dependencies": {
+    "com.angrykoala.services": "2.0.0",
+    "com.unity.inputsystem": "1.20.1"
+  }
+}
