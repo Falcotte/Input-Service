@@ -45,7 +45,7 @@ namespace AngryKoala.Input
         public float HandleSize => _handleSize;
 
         [SerializeField]
-        [Tooltip("Fade the joystick out while no finger drives it.")]
+        [Tooltip("Fade the joystick out while no finger drives it. Applies to floating and following joysticks. A fixed joystick is always shown.")]
         private bool _hideWhenIdle = true;
         public bool HideWhenIdle => _hideWhenIdle;
 
@@ -72,6 +72,20 @@ namespace AngryKoala.Input
         private IInputSurface _surface;
         private float _opacity;
 
+        private Vector2 _shownCenter;
+        private Vector2 _shownHandleOffset;
+        private Vector2 _returnStartCenter;
+        private Vector2 _returnStartHandleOffset;
+        private float _returnElapsed;
+        private bool _wasActive;
+        private bool _isReturning;
+        private bool _isReturnHiding;
+        private bool _hasShownCenter;
+
+        private const float _fullOpacity = 1f;
+        private const float _hiddenOpacity = 0f;
+        private const float _completedProgress = 1f;
+
         private const string _backgroundClassName = "angry-koala-joystick__background";
         private const string _handleClassName = "angry-koala-joystick__handle";
 
@@ -84,7 +98,8 @@ namespace AngryKoala.Input
         {
             _background = CreateCircle(_backgroundClassName, _backgroundColor, _outlineColor, _outlineWidth);
             _handle = CreateCircle(_handleClassName, _handleColor, _outlineColor, _outlineWidth);
-            _opacity = _hideWhenIdle ? 0f : 1f;
+            _opacity = _hideWhenIdle ? _hiddenOpacity : _fullOpacity;
+            ResetShownState();
 
             AttachElements();
 
@@ -152,6 +167,7 @@ namespace AngryKoala.Input
         {
             _area = area;
 
+            ResetShownState();
             ResolveSurface();
         }
 
@@ -170,7 +186,8 @@ namespace AngryKoala.Input
                 _surface = null;
             }
 
-            var hasJoystick = _area != null && _surface != null && _area.JoystickMode != JoystickMode.None;
+            var mode = _surface != null ? _surface.JoystickMode : JoystickMode.None;
+            var hasJoystick = mode != JoystickMode.None;
             var display = hasJoystick ? DisplayStyle.Flex : DisplayStyle.None;
 
             _background.style.display = display;
@@ -178,13 +195,17 @@ namespace AngryKoala.Input
 
             if (!hasJoystick)
             {
+                _opacity = _hideWhenIdle ? _hiddenOpacity : _fullOpacity;
+                ResetShownState();
+
                 return;
             }
 
             var joystick = _surface.Joystick;
 
-            UpdateOpacity(joystick.IsActive);
-            UpdatePlacement(joystick);
+            UpdateOpacity(joystick.IsActive, mode);
+            UpdateShownState(joystick, mode);
+            UpdatePlacement(joystick.Radius);
         }
 
         private bool AttachElements()
@@ -209,11 +230,11 @@ namespace AngryKoala.Input
             return true;
         }
 
-        private void UpdateOpacity(bool isActive)
+        private void UpdateOpacity(bool isActive, JoystickMode mode)
         {
-            var target = !_hideWhenIdle || isActive ? 1f : 0f;
+            var target = !_hideWhenIdle || isActive || mode == JoystickMode.Fixed ? _fullOpacity : _hiddenOpacity;
 
-            if (_fadeDuration <= 0f)
+            if (_fadeDuration <= 0f || mode == JoystickMode.Fixed)
             {
                 _opacity = target;
             }
@@ -226,14 +247,82 @@ namespace AngryKoala.Input
             _handle.style.opacity = _opacity;
         }
 
-        private void UpdatePlacement(JoystickData joystick)
+        private void UpdateShownState(JoystickData joystick, JoystickMode mode)
+        {
+            if (joystick.IsActive)
+            {
+                _shownCenter = joystick.Center;
+                _shownHandleOffset = joystick.HandlePosition - joystick.Center;
+                _wasActive = true;
+                _isReturning = false;
+                _hasShownCenter = true;
+
+                return;
+            }
+
+            if (_wasActive)
+            {
+                _wasActive = false;
+                _isReturning = true;
+                _returnElapsed = 0f;
+                _returnStartCenter = _shownCenter;
+                _returnStartHandleOffset = _shownHandleOffset;
+                _isReturnHiding = IsHiding(mode);
+            }
+
+            if (_isReturning)
+            {
+                AdvanceReturn(joystick);
+
+                return;
+            }
+
+            _shownHandleOffset = Vector2.zero;
+
+            if (IsHiding(mode) && _hasShownCenter)
+            {
+                return;
+            }
+
+            _shownCenter = joystick.Center;
+            _hasShownCenter = false;
+        }
+
+        private void AdvanceReturn(JoystickData joystick)
+        {
+            _returnElapsed += Time.unscaledDeltaTime;
+
+            var progress = _returnDuration <= 0f ? _completedProgress : Mathf.Clamp01(_returnElapsed / _returnDuration);
+            var remaining = 1f - progress;
+            var eased = 1f - remaining * remaining;
+
+            _shownHandleOffset = Vector2.Lerp(_returnStartHandleOffset, Vector2.zero, eased);
+            _shownCenter = _isReturnHiding ? _returnStartCenter : Vector2.Lerp(_returnStartCenter, joystick.Center, eased);
+
+            if (progress >= _completedProgress)
+            {
+                _isReturning = false;
+                _hasShownCenter = _isReturnHiding;
+            }
+        }
+
+        private void ResetShownState()
+        {
+            _wasActive = false;
+            _isReturning = false;
+            _hasShownCenter = false;
+        }
+
+        private bool IsHiding(JoystickMode mode) => _hideWhenIdle && mode != JoystickMode.Fixed;
+
+        private void UpdatePlacement(float radius)
         {
             var panel = _background.panel;
 
-            var center = ScreenToPanel(panel, joystick.Center);
-            var radiusEdge = ScreenToPanel(panel, joystick.Center + new Vector2(joystick.Radius, 0f));
+            var center = ScreenToPanel(panel, _shownCenter);
+            var radiusEdge = ScreenToPanel(panel, _shownCenter + new Vector2(radius, 0f));
             var diameter = 2f * Mathf.Abs(radiusEdge.x - center.x);
-            var handleCenter = ScreenToPanel(panel, joystick.HandlePosition);
+            var handleCenter = ScreenToPanel(panel, _shownCenter + _shownHandleOffset);
 
             Place(_background, center, diameter);
             Place(_handle, handleCenter, diameter * _handleSize);
