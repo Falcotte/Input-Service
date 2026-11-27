@@ -51,7 +51,7 @@ The package lives entirely under `Assets/Input/`. Its namespace is `AngryKoala.I
 
 **`IInputService`** (extends `IService`): `Screen`, `IsBlocked`, `OnBackPressed`, `GetArea(InputArea)`, `Block(object)` and `Unblock(object)`, `AddPointerFilter` and `RemovePointerFilter`, and `GetData(List<InputSurfaceData>)`.
 
-**`IInputSurface`**: `IsTouching`, `TouchCount`, `PrimaryTouch`, `Joystick`, `JoystickMode` (get and set; a set mode overrides the area asset for that surface only, and the screen surface stays None), and the nine events `OnTouchBegan`, `OnTouchEnded`, `OnTap`, `OnHold`, `OnDragBegan`, `OnDrag`, `OnDragEnded`, `OnSwipe` and `OnPinch`.
+**`IInputSurface`**: `IsTouching`, `TouchCount`, `PrimaryTouch`, `Joystick`, `JoystickMode` (get and set; a set mode overrides the area asset for that surface only until the asset's mode changes, and the screen surface stays None), and the nine events `OnTouchBegan`, `OnTouchEnded`, `OnTap`, `OnHold`, `OnDragBegan`, `OnDrag`, `OnDragEnded`, `OnSwipe` and `OnPinch`.
 
 **`IPointerFilter`**: `TakesPointer(Vector2)`. The one-method interface the UI registers through.
 
@@ -87,7 +87,7 @@ The package lives entirely under `Assets/Input/`. Its namespace is `AngryKoala.I
 
 `InputSurface.GetJoystick` reads the primary finger's position against the centre. The centre is the rest position for Fixed, and the touch-down position otherwise. `PullJoystickCenter` moves the centre for Following. Radii and distances are in centimetres in the settings and are turned into pixels with the surface's pixels-per-centimetre.
 
-The mode is `InputSurface.JoystickMode`. Its getter returns `_overrideJoystickMode` when `_hasJoystickModeOverride` is set, otherwise `_configuredJoystickMode`, which `SetJoystick` fills from the area asset. The setter stores the override and never touches the asset. The screen surface (no `Area`) logs `_screenJoystickWarning` for any mode other than None and ignores it. No call clears the override.
+The mode is `InputSurface.JoystickMode`. Its getter returns `_overrideJoystickMode` when `_hasJoystickModeOverride` is set, otherwise `_configuredJoystickMode`, which `SetJoystick` fills from the area asset. The setter stores the override and never touches the asset. The screen surface (no `Area`) logs `_screenJoystickWarning` for any mode other than None and ignores it. The most recent change wins: `SetJoystick` drops the override when the mode it is given differs from the one of its previous call (`_hasConfiguredJoystickMode` keeps the first call from counting as a change), so an edit to the asset's mode takes over again, from the service's next update. No public call clears the override.
 
 `VirtualJoystickView` reads the mode from the surface each `LateUpdate`. Fixed is always shown. Hide When Idle (`_hideWhenIdle`) applies to Floating and Following only. After the finger lifts, a hiding joystick keeps its last centre while it fades, and its handle returns to the centre over `ReturnDuration`, a non-hiding one returns to its rest position over the same time, both on unscaled time.
 

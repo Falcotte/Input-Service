@@ -181,6 +181,7 @@ namespace AngryKoala.Input
         private JoystickMode _configuredJoystickMode;
         private JoystickMode _overrideJoystickMode;
         private bool _hasJoystickModeOverride;
+        private bool _hasConfiguredJoystickMode;
         private float _joystickRadiusCentimeters;
         private float _joystickDeadZone;
         private Vector2 _joystickRestPosition;
@@ -235,11 +236,18 @@ namespace AngryKoala.Input
         }
 
         /// <summary>
-        /// Sets the joystick of the surface. May be called every frame. The rest position is in pixels.
+        /// Sets the joystick of the surface. May be called every frame. The rest position is in pixels. A mode that
+        /// differs from the one of the previous call drops the mode set through <see cref="JoystickMode"/>.
         /// </summary>
         public void SetJoystick(JoystickMode mode, float radiusCentimeters, float deadZone, Vector2 restPosition)
         {
+            if (_hasConfiguredJoystickMode && mode != _configuredJoystickMode)
+            {
+                _hasJoystickModeOverride = false;
+            }
+
             _configuredJoystickMode = mode;
+            _hasConfiguredJoystickMode = true;
             _joystickRadiusCentimeters = Mathf.Max(0f, radiusCentimeters);
             _joystickDeadZone = Mathf.Clamp(deadZone, 0f, InputArea.MaximumJoystickDeadZone);
             _joystickRestPosition = restPosition;
