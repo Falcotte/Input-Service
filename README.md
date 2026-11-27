@@ -79,6 +79,9 @@ public interface IInputSurface
 
     JoystickData Joystick { get; }
 
+    // The mode set at runtime if there is one, otherwise the area asset's. The screen surface stays None.
+    JoystickMode JoystickMode { get; set; }
+
     event Action<TouchData> OnTouchBegan;
     event Action<TouchData> OnTouchEnded;
     event Action<TouchData> OnTap;
@@ -152,7 +155,7 @@ public sealed class InputArea : ScriptableObject
     public InputAreaSpace Space { get; }           // The rectangle is a fraction of the safe area by default.
     public Vector2 Minimum { get; }                // Bottom left corner, from (0, 0) to (1, 1).
     public Vector2 Maximum { get; }                // Top right corner, from (0, 0) to (1, 1).
-    public JoystickMode JoystickMode { get; }
+    public JoystickMode JoystickMode { get; }      // The default. A surface can change it at runtime.
     public float JoystickRadius { get; }           // Centimetres.
     public float JoystickDeadZone { get; }         // The part of the radius around the centre that gives no direction.
     public Vector2 FixedJoystickPosition { get; }  // Where a fixed joystick sits inside the area.
@@ -185,8 +188,9 @@ public sealed class VirtualJoystickView : MonoBehaviour
     public Color OutlineColor { get; }      // Defaults to black at 35 % alpha.
     public float OutlineWidth { get; }      // Panel pixels. Defaults to 2.
     public float HandleSize { get; }        // Fraction of the background diameter. Defaults to 0.5.
-    public bool HideWhenIdle { get; }       // Fades the joystick out while no finger drives it.
+    public bool HideWhenIdle { get; }       // Fades a floating or following joystick out while no finger drives it. A fixed one is always shown.
     public float FadeDuration { get; }      // Seconds, not affected by the time scale.
+    public float ReturnDuration { get; }    // Seconds, not affected by the time scale. Defaults to 0.1.
 }
 ```
 
@@ -273,6 +277,34 @@ public sealed class Player : MonoBehaviour
 
 - A joystick belongs to an area. The screen has none. A joystick over the whole screen is an area that covers the screen.
 - **None** gives no joystick. **Fixed** keeps the joystick at `FixedJoystickPosition` inside the area. **Floating** places it where the first finger went down, until the finger lifts. **Following** does the same, and moves the joystick along when the finger goes further than the radius.
+- The mode is chosen on the area asset (**Joystick Mode**), or in the **Area Joystick** box of the `VirtualJoystickView` that draws it (see Joystick visual). That box edits the same asset.
+- `IInputSurface.JoystickMode` can be read and set at runtime. Reading it gives the mode set at runtime, or the asset's mode if none was set. Setting it changes the mode of that surface for the rest of its life, and the asset is never changed. The radius, the dead zone and the fixed position still come from the area. There is no call that clears the runtime mode. Setting another mode on the screen surface logs a warning and is ignored, because the screen has no joystick.
+
+A settings menu that switches the move area between Fixed and Floating:
+
+```csharp
+using AngryKoala.Input;
+using AngryKoala.Services;
+using UnityEngine;
+
+public sealed class JoystickSettings : MonoBehaviour
+{
+    [SerializeField] private InputArea _moveArea;
+
+    private IInputSurface _moveSurface;
+
+    private void Start()
+    {
+        var inputService = ServiceLocator.Get<IInputService>();
+        _moveSurface = inputService.GetArea(_moveArea);
+    }
+
+    // Called by the menu buttons.
+    public void UseFixedJoystick() => _moveSurface.JoystickMode = JoystickMode.Fixed;
+
+    public void UseFloatingJoystick() => _moveSurface.JoystickMode = JoystickMode.Floating;
+}
+```
 - The joystick's `Direction` is zero inside the dead zone. Outside it, the length rises from 0 to 1 at the edge of the radius. The dead zone is at most 0.9 of the radius.
 - `Joystick.HandlePosition` never goes further from the centre than the radius.
 
@@ -325,7 +357,11 @@ An empty `UIDocument` root is not picked, so it takes no touches. A full-screen 
 
 ## Joystick visual
 
-`VirtualJoystickView` draws the circle and the handle of one area's joystick. It sits on the same GameObject as the `UIDocument`, and it reads the joystick from the area's surface each frame.
+`VirtualJoystickView` draws the circle and the handle of one area's joystick. It sits on the same GameObject as the `UIDocument`, and it reads the joystick from the area's surface each frame. It draws the mode the surface has at that time, so a mode set at runtime is what appears.
+
+A fixed joystick is always shown. Hide When Idle applies to floating and following joysticks only. When the finger lifts, the joystick does not jump. A joystick that hides stays where it was while it fades out, and its handle moves back to the centre over **Return Duration**. A joystick that does not hide moves back to its rest position over the same time. Return Duration defaults to 0.1 s and is not affected by the time scale.
+
+The view's Inspector has an **Area Joystick** box below the view's own fields. It shows the area's Joystick Mode, Joystick Radius, Joystick Dead Zone and Fixed Joystick Position, and edits the area asset. The box is in the `AngryKoala.Input.UIToolkit.Editor` assembly, which is Editor only.
 
 The view draws with styles only. The package ships no sprites. It adds two USS classes, `angry-koala-joystick__background` and `angry-koala-joystick__handle`, so a project can restyle them in its own stylesheet. It sets the colours, the outline colour and the outline width in code. The circles ignore picking.
 
@@ -363,7 +399,7 @@ The source is any object. Use the object that opened the block, so that two plac
 
 ## Tests
 
-The module has Edit Mode tests in `Assets/Input/Tests/Editor` for the gesture logic, which work on samples and times and need no scene. It has Play Mode tests in `Assets/Input/Tests/Runtime` for the service, and in `Assets/Input/UIToolkit/Tests/Runtime` for the UI Toolkit components. Run them from the Test Runner.
+The module has Edit Mode tests in `Assets/Input/Tests/Editor` for the gesture logic, which work on samples and times and need no scene. They are grouped by subject: `Areas`, `Events`, `Gestures`, `Joystick`, `Surfaces` and `Utilities`. It has Play Mode tests in `Assets/Input/Tests/Runtime` for the service, grouped as `Areas`, `Gestures`, `Service`, `Touches` and `Utilities`, with `ScriptedTouchTests` at the root, and in `Assets/Input/UIToolkit/Tests/Runtime` for the UI Toolkit components. Run them from the Test Runner.
 
 ### Scripted touches
 
@@ -421,8 +457,8 @@ A real mouse click in the Game view, or a real Escape key, during a test run can
 
 ## Inspector
 
-Open it from **Angry Koala > Input > Input Inspector**. It shows each surface with its touch count, primary touch, joystick, the last gesture and its pixel rectangle. It lists the fingers and the surface that owns each one, the blockers, and the pointer filters. It draws a map of the screen with the areas, the touches and the joysticks, in its own window. It reads the service in Play Mode.
+Open it from **Angry Koala > Input > Input Inspector**. It shows each surface with its touch count, primary touch, joystick, the last gesture and its pixel rectangle. It lists the fingers and the surface that owns each one, the blockers, and the pointer filters. The Fingers table always shows its header and at least one row, with "-" when no finger is down. The Status and Fingers sections grow only during a Play session, so the Screen Map keeps its size when a finger goes down. It draws a map of the screen with the areas, the touches and the joysticks, in its own window. It reads the service in Play Mode.
 
 ## Demo
 
-The demo is in `Assets/Demo`, outside the package. Open `Assets/Demo/Scenes/DemoScene.unity`. `DemoPlayer` moves with the joystick of the move area. `DemoSpawner` spawns on a tap on the screen. `DemoGestures` handles swipes and pinches on the screen. `DemoHud` is a UI Toolkit screen that shows the last gesture of each surface, has a toggle that blocks the input, and has a **Clear cubes** button, whose taps are meant to stay off the spawner.
+The demo is in `Assets/Demo`, outside the package. Open `Assets/Demo/Scenes/DemoScene.unity`. `DemoPlayer` moves with the joystick of the move area. `DemoSpawner` spawns on a tap on the screen. `DemoGestures` handles swipes and pinches on the screen. `DemoHud` is a UI Toolkit screen that shows the last gesture of each surface, has a toggle that blocks the input, and has a **Clear cubes** button, whose taps are meant to stay off the spawner. It also has **Fixed**, **Floating** and **Following** buttons that set the joystick mode of the move area at runtime, with the selected mode highlighted, and a "Joystick: <mode>" line in its status text.

@@ -12,15 +12,16 @@ To run the editor inspection tool: **Angry Koala > Input > Input Inspector** (Pl
 
 Tests live in three places:
 
-- `Assets/Input/Tests/Editor`: Edit Mode tests of the gesture logic (`InputSurface`).
-- `Assets/Input/Tests/Runtime`: Play Mode tests of the service, through `ScriptedTouch`.
+- `Assets/Input/Tests/Editor`: Edit Mode tests of the gesture logic (`InputSurface`), grouped into `Areas`, `Events`, `Gestures`, `Joystick`, `Surfaces` and `Utilities`.
+- `Assets/Input/Tests/Runtime`: Play Mode tests of the service, through `ScriptedTouch`, grouped into `Areas`, `Gestures`, `Service`, `Touches` and `Utilities`. `ScriptedTouchTests.cs` sits at the root.
 - `Assets/Input/UIToolkit/Tests/Runtime`: Play Mode tests of the UI Toolkit components.
 
 Run them from the Test Runner.
 
 ## Repository Layout
 
-- `Assets/Input/` is the package. It holds `package.json` (`com.angrykoala.input`, version 1.0.0), the runtime code in `Scripts/`, the Editor code in `Scripts/Editor/`, the UI Toolkit components in `UIToolkit/Scripts/`, the test tool in `Testing/Scripts/`, and the tests in `Tests/`. Consumers install it from git with `?path=/Assets/Input#<tag>`.
+- `Assets/Input/` is the package. It holds `package.json` (`com.angrykoala.input`, version 1.0.0), the runtime code in `Scripts/`, the Editor code in `Scripts/Editor/`, the UI Toolkit components in `UIToolkit/Scripts/` (their Editor code in `UIToolkit/Scripts/Editor/`), the test tool in `Testing/Scripts/`, and the tests in `Tests/`. Consumers install it from git with `?path=/Assets/Input#<tag>`.
+- Inside `Scripts/`, the types are grouped into `Surfaces/`, `Areas/`, `Gestures/`, `Joystick/` and `Events/`. `InputService`, `IInputService`, `IPointerFilter` and `AssemblyInfo.cs` stay at the root. Namespaces did not change with the folders.
 - `Assets/Demo/` is the demo scene, its scripts, materials and UI. It is outside the package and is not distributed with it.
 - `Packages/manifest.json` lists `com.angrykoala.services` from git, plus the Unity packages the project uses. The Input System is listed there too.
 - `README.md` at the root is the user guide. `Assets/Input/CHANGELOG.md` is the changelog.
@@ -41,6 +42,7 @@ The package lives entirely under `Assets/Input/`. Its namespace is `AngryKoala.I
 - `AngryKoala.Input.Testing`: `Testing/Scripts/`. `ScriptedTouch`. Its define constraint is `UNITY_INCLUDE_TESTS`, and it is not auto-referenced, so a test assembly must list it.
 - `AngryKoala.Input.Tests.Editor`: `Tests/Editor/`, Edit Mode tests.
 - `AngryKoala.Input.Tests.Runtime`: `Tests/Runtime/`, Play Mode tests. Uses `UNITY_INCLUDE_TESTS` as a define constraint and `overrideReferences`.
+- `AngryKoala.Input.UIToolkit.Editor`: `UIToolkit/Scripts/Editor/`, Editor only. `VirtualJoystickViewEditor`, the Area Joystick box. References `AngryKoala.Input` and `AngryKoala.Input.UIToolkit`.
 - `AngryKoala.Input.UIToolkit.Tests.Runtime`: `UIToolkit/Tests/Runtime/`, Play Mode tests for the UI Toolkit components.
 
 `AssemblyInfo.cs` in `Scripts/` makes the internals visible to `AngryKoala.Input.Editor`, `AngryKoala.Input.UIToolkit`, `AngryKoala.Input.Tests.Editor` and `AngryKoala.Input.Tests.Runtime`. The UI Toolkit `AssemblyInfo.cs` does the same for `AngryKoala.Input.UIToolkit.Tests.Runtime`.
@@ -49,7 +51,7 @@ The package lives entirely under `Assets/Input/`. Its namespace is `AngryKoala.I
 
 **`IInputService`** (extends `IService`): `Screen`, `IsBlocked`, `OnBackPressed`, `GetArea(InputArea)`, `Block(object)` and `Unblock(object)`, `AddPointerFilter` and `RemovePointerFilter`, and `GetData(List<InputSurfaceData>)`.
 
-**`IInputSurface`**: `IsTouching`, `TouchCount`, `PrimaryTouch`, `Joystick`, and the nine events `OnTouchBegan`, `OnTouchEnded`, `OnTap`, `OnHold`, `OnDragBegan`, `OnDrag`, `OnDragEnded`, `OnSwipe` and `OnPinch`.
+**`IInputSurface`**: `IsTouching`, `TouchCount`, `PrimaryTouch`, `Joystick`, `JoystickMode` (get and set; a set mode overrides the area asset for that surface only, and the screen surface stays None), and the nine events `OnTouchBegan`, `OnTouchEnded`, `OnTap`, `OnHold`, `OnDragBegan`, `OnDrag`, `OnDragEnded`, `OnSwipe` and `OnPinch`.
 
 **`IPointerFilter`**: `TakesPointer(Vector2)`. The one-method interface the UI registers through.
 
@@ -84,6 +86,10 @@ The package lives entirely under `Assets/Input/`. Its namespace is `AngryKoala.I
 ### Joystick
 
 `InputSurface.GetJoystick` reads the primary finger's position against the centre. The centre is the rest position for Fixed, and the touch-down position otherwise. `PullJoystickCenter` moves the centre for Following. Radii and distances are in centimetres in the settings and are turned into pixels with the surface's pixels-per-centimetre.
+
+The mode is `InputSurface.JoystickMode`. Its getter returns `_overrideJoystickMode` when `_hasJoystickModeOverride` is set, otherwise `_configuredJoystickMode`, which `SetJoystick` fills from the area asset. The setter stores the override and never touches the asset. The screen surface (no `Area`) logs `_screenJoystickWarning` for any mode other than None and ignores it. No call clears the override.
+
+`VirtualJoystickView` reads the mode from the surface each `LateUpdate`. Fixed is always shown. Hide When Idle (`_hideWhenIdle`) applies to Floating and Following only. After the finger lifts, a hiding joystick keeps its last centre while it fades, and its handle returns to the centre over `ReturnDuration`, a non-hiding one returns to its rest position over the same time, both on unscaled time.
 
 ## Conventions and gotchas
 
