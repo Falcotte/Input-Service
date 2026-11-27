@@ -42,6 +42,18 @@ namespace AngryKoala.Input.Tests
             }
         }
 
+        [Serializable]
+        private sealed class InputAreaJoystickModeField
+        {
+            [SerializeField]
+            private int _joystickMode;
+
+            public InputAreaJoystickModeField(JoystickMode joystickMode)
+            {
+                _joystickMode = (int)joystickMode;
+            }
+        }
+
         public static InputArea CreateArea(string areaName, InputAreaSpace space, Vector2 minimum, Vector2 maximum,
             JoystickMode joystickMode = JoystickMode.None, float joystickRadius = 1f, float joystickDeadZone = 0.1f,
             Vector2 fixedJoystickPosition = default)
@@ -55,6 +67,11 @@ namespace AngryKoala.Input.Tests
             JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(fields), area);
 
             return area;
+        }
+
+        public static void SetJoystickMode(InputArea area, JoystickMode joystickMode)
+        {
+            JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(new InputAreaJoystickModeField(joystickMode)), area);
         }
     }
 }

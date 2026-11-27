@@ -36,6 +36,23 @@ namespace AngryKoala.Input.Tests
         }
 
         [UnityTest]
+        public IEnumerator JoystickMode_SetOnAnAreaSurface_IsDroppedWhenTheModeOfTheAssetChanges()
+        {
+            var area = CreateArea("Floating", Vector2.zero, Vector2.one, JoystickMode.Floating);
+            var surface = Service.GetArea(area);
+            yield return null;
+
+            surface.JoystickMode = JoystickMode.Fixed;
+            yield return WaitFrames(2);
+
+            InputAreaTestUtility.SetJoystickMode(area, JoystickMode.Following);
+            yield return WaitFrames(2);
+
+            Assert.That(surface.JoystickMode, Is.EqualTo(JoystickMode.Following));
+            Assert.That(area.JoystickMode, Is.EqualTo(JoystickMode.Following));
+        }
+
+        [UnityTest]
         public IEnumerator JoystickMode_SetToFixed_PutsTheCenterAtTheFixedPositionOfTheArea()
         {
             var area = CreateArea("Floating", LeftHalfMinimum, LeftHalfMaximum, JoystickMode.Floating, 1f, 0f,

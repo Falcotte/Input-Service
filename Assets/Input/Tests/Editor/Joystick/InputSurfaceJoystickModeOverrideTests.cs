@@ -64,6 +64,55 @@ namespace AngryKoala.Input.Tests
         }
 
         [Test]
+        public void JoystickMode_WhenSet_IsDroppedWhenSetJoystickGivesADifferentMode()
+        {
+            SetJoystick(JoystickMode.Floating);
+
+            Surface.JoystickMode = JoystickMode.Fixed;
+            SetJoystick(JoystickMode.Floating);
+
+            SetJoystick(JoystickMode.Following);
+
+            Assert.That(Surface.JoystickMode, Is.EqualTo(JoystickMode.Following));
+        }
+
+        [Test]
+        public void JoystickMode_DroppedByADifferentMode_StaysDroppedWhenTheEarlierModeComesBack()
+        {
+            SetJoystick(JoystickMode.Floating);
+
+            Surface.JoystickMode = JoystickMode.Fixed;
+            SetJoystick(JoystickMode.Following);
+            SetJoystick(JoystickMode.Floating);
+
+            Assert.That(Surface.JoystickMode, Is.EqualTo(JoystickMode.Floating));
+        }
+
+        [Test]
+        public void JoystickMode_SetAgainAfterItWasDropped_WinsAgain()
+        {
+            SetJoystick(JoystickMode.Floating);
+
+            Surface.JoystickMode = JoystickMode.Fixed;
+            SetJoystick(JoystickMode.Following);
+
+            Surface.JoystickMode = JoystickMode.Fixed;
+            SetJoystick(JoystickMode.Following);
+
+            Assert.That(Surface.JoystickMode, Is.EqualTo(JoystickMode.Fixed));
+        }
+
+        [Test]
+        public void JoystickMode_SetBeforeTheFirstSetJoystick_IsKept()
+        {
+            Surface.JoystickMode = JoystickMode.Fixed;
+
+            SetJoystick(JoystickMode.Floating);
+
+            Assert.That(Surface.JoystickMode, Is.EqualTo(JoystickMode.Fixed));
+        }
+
+        [Test]
         public void JoystickMode_SetToFixed_KeepsTheCenterAtTheRestPosition()
         {
             SetJoystick(JoystickMode.Floating);
