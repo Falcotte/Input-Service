@@ -64,10 +64,16 @@ namespace AngryKoala.Input.Demo
         private VisualElement _container;
         private Label _statusLabel;
         private Toggle _blockToggle;
+        private IInputSurface _moveSurface;
+        private Button _fixedButton;
+        private Button _floatingButton;
+        private Button _followingButton;
         private bool _isBlocking;
 
         private const float _margin = 24f;
         private const float _fontSize = 36f;
+
+        private static readonly Color _selectedButtonColor = new(0.2f, 0.5f, 1f, 1f);
 
         private void OnEnable()
         {
@@ -92,6 +98,9 @@ namespace AngryKoala.Input.Demo
             _container = null;
             _statusLabel = null;
             _blockToggle = null;
+            _fixedButton = null;
+            _floatingButton = null;
+            _followingButton = null;
         }
 
         private void Start()
@@ -101,7 +110,8 @@ namespace AngryKoala.Input.Demo
             TryBuildUi();
 
             _screenLog = new GestureLog(_inputService.Screen, Refresh);
-            _moveLog = new GestureLog(_inputService.GetArea(_moveArea), Refresh);
+            _moveSurface = _inputService.GetArea(_moveArea);
+            _moveLog = new GestureLog(_moveSurface, Refresh);
 
             Refresh();
         }
@@ -164,10 +174,24 @@ namespace AngryKoala.Input.Demo
             _blockToggle.style.backgroundColor = new Color(0f, 0f, 0f, 0.5f);
             _blockToggle.RegisterValueChangedCallback(HandleBlockChanged);
 
+            var modeRow = new VisualElement();
+            modeRow.pickingMode = PickingMode.Ignore;
+            modeRow.style.flexDirection = FlexDirection.Row;
+            modeRow.style.alignItems = Align.Center;
+            modeRow.style.marginTop = _margin * 0.5f;
+
+            _fixedButton = CreateModeButton("Fixed", HandleFixedClicked);
+            _floatingButton = CreateModeButton("Floating", HandleFloatingClicked);
+            _followingButton = CreateModeButton("Following", HandleFollowingClicked);
+
             row.Add(clearButton);
             row.Add(_blockToggle);
+            modeRow.Add(_fixedButton);
+            modeRow.Add(_floatingButton);
+            modeRow.Add(_followingButton);
             _container.Add(_statusLabel);
             _container.Add(row);
+            _container.Add(modeRow);
             root.Add(_container);
 
             Refresh();
@@ -197,6 +221,24 @@ namespace AngryKoala.Input.Demo
             _spawner.Clear();
         }
 
+        private void HandleFixedClicked() => SetJoystickMode(JoystickMode.Fixed);
+
+        private void HandleFloatingClicked() => SetJoystickMode(JoystickMode.Floating);
+
+        private void HandleFollowingClicked() => SetJoystickMode(JoystickMode.Following);
+
+        private void SetJoystickMode(JoystickMode mode)
+        {
+            if (_moveSurface == null)
+            {
+                return;
+            }
+
+            _moveSurface.JoystickMode = mode;
+
+            Refresh();
+        }
+
         private void HandleBlockChanged(ChangeEvent<bool> changeEvent)
         {
             _isBlocking = changeEvent.newValue;
@@ -215,14 +257,31 @@ namespace AngryKoala.Input.Demo
 
         private void Refresh()
         {
+            RefreshModeButtons();
+
             if (_inputService == null || _statusLabel == null || _screenLog == null)
             {
                 return;
             }
 
             var blocked = _inputService.IsBlocked ? "yes" : "no";
+            var joystickMode = _moveSurface != null ? _moveSurface.JoystickMode : JoystickMode.None;
 
-            _statusLabel.text = $"Screen: {_screenLog.Last}\nMove area: {_moveLog.Last}\nBlocked: {blocked}";
+            _statusLabel.text = $"Screen: {_screenLog.Last}\nMove area: {_moveLog.Last}\nBlocked: {blocked}\nJoystick: {joystickMode}";
+        }
+
+        private void RefreshModeButtons()
+        {
+            if (_fixedButton == null)
+            {
+                return;
+            }
+
+            var mode = _moveSurface != null ? _moveSurface.JoystickMode : JoystickMode.None;
+
+            MarkSelected(_fixedButton, mode == JoystickMode.Fixed);
+            MarkSelected(_floatingButton, mode == JoystickMode.Floating);
+            MarkSelected(_followingButton, mode == JoystickMode.Following);
         }
 
         private void OnDestroy()
@@ -235,5 +294,23 @@ namespace AngryKoala.Input.Demo
                 _inputService.Unblock(this);
             }
         }
+
+        #region Utility
+
+        private static Button CreateModeButton(string text, Action onClicked)
+        {
+            var button = new Button(onClicked) { text = text };
+            button.style.fontSize = _fontSize;
+            button.style.marginRight = _margin;
+
+            return button;
+        }
+
+        private static void MarkSelected(Button button, bool isSelected)
+        {
+            button.style.backgroundColor = isSelected ? new StyleColor(_selectedButtonColor) : new StyleColor(StyleKeyword.Null);
+        }
+
+        #endregion
     }
 }
