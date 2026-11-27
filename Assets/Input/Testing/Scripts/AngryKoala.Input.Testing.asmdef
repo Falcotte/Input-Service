@@ -11,7 +11,7 @@
     "precompiledReferences": [],
     "autoReferenced": false,
     "defineConstraints": [
-        "UNITY_INCLUDE_TESTS"
+        "UNITY_INCLUDE_TESTS || UNITY_EDITOR"
     ],
     "versionDefines": [],
     "noEngineReferences": false

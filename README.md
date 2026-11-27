@@ -451,7 +451,7 @@ While a `ScriptedTouch` exists, two Input System settings are changed: `backgrou
 
 Those settings make the Input System and the service see a scripted touch while the Editor is in the background. UI Toolkit has its own check: it ignores pointer input while the application does not count as focused, which in the Editor depends on the Game view having the focus. So the first live `ScriptedTouch` also gives the focus to the Game view in the Editor. It takes the focus from the window you were in, and it does not give it back. With no Game view open it logs one warning, and scripted clicks on UI Toolkit buttons may then be ignored.
 
-A test assembly that uses `ScriptedTouch` must reference `AngryKoala.Input.Testing`. That assembly is compiled only where the `UNITY_INCLUDE_TESTS` define is set. In a project that installs the package, that means listing `com.angrykoala.input` under `testables` in `Packages/manifest.json`, which also adds the package's own tests to the Test Runner.
+A test assembly that uses `ScriptedTouch` must reference `AngryKoala.Input.Testing`. That assembly is compiled in the Editor, and anywhere else the `UNITY_INCLUDE_TESTS` define is set. A project that installs the package can therefore use `ScriptedTouch` in tests that run in the Editor with no further setup, and the assembly stays out of player builds. Running such tests on a device needs `com.angrykoala.input` listed under `testables` in `Packages/manifest.json`, which also adds the package's own tests to the Test Runner.
 
 A real mouse click in the Game view, or a real Escape key, during a test run can disturb the service tests, because the service reads the current mouse and keyboard.
 

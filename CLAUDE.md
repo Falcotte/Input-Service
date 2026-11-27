@@ -39,7 +39,7 @@ The package lives entirely under `Assets/Input/`. Its namespace is `AngryKoala.I
 - `AngryKoala.Input`: runtime code in `Scripts/`. References `AngryKoala.Services` and the Input System. It names no UI system.
 - `AngryKoala.Input.Editor`: `Scripts/Editor/`, Editor only. The Input Inspector.
 - `AngryKoala.Input.UIToolkit`: `UIToolkit/Scripts/`. `UIDocumentPointerFilter` and `VirtualJoystickView`.
-- `AngryKoala.Input.Testing`: `Testing/Scripts/`. `ScriptedTouch`. Its define constraint is `UNITY_INCLUDE_TESTS`, and it is not auto-referenced, so a test assembly must list it.
+- `AngryKoala.Input.Testing`: `Testing/Scripts/`. `ScriptedTouch`. Its define constraint is `UNITY_INCLUDE_TESTS || UNITY_EDITOR`, so it compiles in the Editor without `testables` and stays out of player builds. It is not auto-referenced, so a test assembly must list it.
 - `AngryKoala.Input.Tests.Editor`: `Tests/Editor/`, Edit Mode tests.
 - `AngryKoala.Input.Tests.Runtime`: `Tests/Runtime/`, Play Mode tests. Uses `UNITY_INCLUDE_TESTS` as a define constraint and `overrideReferences`.
 - `AngryKoala.Input.UIToolkit.Editor`: `UIToolkit/Scripts/Editor/`, Editor only. `VirtualJoystickViewEditor`, the Area Joystick box. References `AngryKoala.Input` and `AngryKoala.Input.UIToolkit`.
